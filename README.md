@@ -1,2 +1,2 @@
-# expresskit.ts
-Collection of Helpers to make express development faster and secure in TypeScript
+# weaverkit
+Collection of Helpers to make Node.js app development faster and secure in TypeScript
