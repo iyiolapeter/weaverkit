@@ -1,0 +1,26 @@
+{
+  "name": "@weaverkit/data",
+  "version": "0.0.1",
+  "description": "Collection of utility classes for any express powered rest api and others",
+  "author": "Peter Smart <iyiolapeter@gmail.com>",
+  "homepage": "",
+  "license": "MIT",
+  "main": "lib/index.js",
+  "directories": {
+    "lib": "lib",
+    "test": "__tests__"
+  },
+  "files": [
+    "lib"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: run tests from root\" && exit 1"
+  },
+  "dependencies": {
+    "ejs": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/ejs": "^3.0.1"
+  }
+}
