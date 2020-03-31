@@ -21,6 +21,9 @@
     "ejs": "^3.0.1"
   },
   "devDependencies": {
-    "@types/ejs": "^3.0.1"
-  }
+    "@types/ejs": "^3.0.1",
+    "husky": "^4.2.3",
+    "lint-staged": "^10.1.0"
+  },
+  "gitHead": "e33a71966e155e67973130b89c3600249ad8da9b"
 }

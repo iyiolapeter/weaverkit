@@ -29,6 +29,9 @@
   "devDependencies": {
     "@types/cors": "^2.8.6",
     "@types/express": "^4.17.3",
-    "@types/helmet": "0.0.45"
-  }
+    "@types/helmet": "0.0.45",
+    "husky": "^4.2.3",
+    "lint-staged": "^10.1.0"
+  },
+  "gitHead": "e33a71966e155e67973130b89c3600249ad8da9b"
 }
