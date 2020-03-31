@@ -164,6 +164,8 @@ export class ErrorHandler extends EventEmitter {
 	}
 
 	format(error: Error, verbose = false) {
-		return this.wrap(error).format(verbose);
+		const formatted = this.wrap(error).format(verbose);
+		this.emit("format", formatted);
+		return formatted;
 	}
 }
