@@ -1,6 +1,6 @@
 {
   "name": "@weaverkit/data",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Collection of utility classes for any express powered rest api and others",
   "author": "Peter Smart <iyiolapeter@gmail.com>",
   "homepage": "",
