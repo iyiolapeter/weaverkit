@@ -17,7 +17,10 @@
     "build": "tsc",
     "test": "echo \"Error: run tests from root\" && exit 1"
   },
-  "gitHead": "e33a71966e155e67973130b89c3600249ad8da9b",
+  "publishConfig": {
+    "access": "public"
+  },
+  "gitHead": "302e89539960cb904d0f1e5a136859a453c5a435",
   "devDependencies": {
     "husky": "^4.2.3",
     "lint-staged": "^10.1.0"
