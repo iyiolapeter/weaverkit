@@ -8,36 +8,54 @@ import helmet from "helmet";
 import cors from "cors";
 
 export class BaseExpressApp extends EventEmitter {
-	constructor(public app: express.Application) {
+	constructor(private _app: express.Application, protected _init = true) {
 		super();
+	}
+
+	get app() {
+		if (!this._init) {
+			throw new Error("App is not initialized. Call init method first");
+		}
+		return this._app;
 	}
 }
 
-interface ExpressAppConfig {
+export interface WeaverExpressAppConfig {
 	routes: RouteCollection;
 	errorHandler: ErrorHandler;
 }
 
-export class ExpressApp extends BaseExpressApp {
+export enum WeaverExpressAppEvents {
+	PREINIT = "preinit",
+	INIT = "init",
+	ROUTES_WILL_BIND = "routes:willbind",
+	ROUTES_DID_BIND = "routes:didbind",
+}
+
+export class WeaverExpressApp extends BaseExpressApp {
 	private routes: RouteCollection;
 	private errorHandler: ErrorHandler;
 
-	constructor({ routes, errorHandler }: ExpressAppConfig) {
-		super(express());
+	constructor({ routes, errorHandler }: WeaverExpressAppConfig) {
+		super(express(), false);
 		this.routes = routes;
 		this.errorHandler = errorHandler;
-		this.init();
 	}
 
-	private init() {
-		this.emit("preinit", this);
+	protected preinit() {
+		this.emit(WeaverExpressAppEvents.PREINIT, this.app);
 		this.app.use(cors());
 		this.app.use(helmet());
 		this.app.use(bodyParser.json());
 		this.app.use(bodyParser.urlencoded({ extended: true }));
-		this.emit("init", this);
+	}
+
+	public init() {
+		this.preinit();
+		this.emit(WeaverExpressAppEvents.INIT, this.app);
 		this.bindRoutes();
 		this.setErrorHandler();
+		this._init = true;
 	}
 
 	protected setErrorHandler() {
@@ -52,7 +70,7 @@ export class ExpressApp extends BaseExpressApp {
 	}
 
 	private bindRoutes() {
-		this.emit("routes:willbind", this);
+		this.emit(WeaverExpressAppEvents.ROUTES_WILL_BIND, this.app);
 		for (const [route, loc] of Object.entries(this.routes)) {
 			const handler = isRouter(loc)
 				? (loc as express.Router)
@@ -64,6 +82,6 @@ export class ExpressApp extends BaseExpressApp {
 			}
 			this.app.use(`/${route}`, handler);
 		}
-		this.emit("routes:didbind", this);
+		this.emit(WeaverExpressAppEvents.ROUTES_DID_BIND, this.app);
 	}
 }
