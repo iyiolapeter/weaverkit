@@ -1,6 +1,6 @@
 {
   "name": "@weaverkit/express",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "> TODO: description",
   "author": "Peter Smart <iyiolapeter@gmail.com>",
   "homepage": "",
@@ -18,8 +18,8 @@
     "test": "echo \"Error: run tests from root\" && exit 1"
   },
   "dependencies": {
-    "@weaverkit/data": "^0.0.2",
-    "@weaverkit/errors": "^0.0.2",
+    "@weaverkit/data": "^0.0.3",
+    "@weaverkit/errors": "^0.0.3",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "express": "^4.17.1",

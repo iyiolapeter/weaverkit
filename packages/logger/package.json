@@ -1,6 +1,6 @@
 {
   "name": "@weaverkit/logger",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "> TODO: description",
   "author": "Peter Smart <iyiolapeter@gmail.com>",
   "homepage": "",
@@ -17,7 +17,7 @@
     "test": "echo \"Error: run tests from root\" && exit 1"
   },
   "dependencies": {
-    "@weaverkit/utils": "^0.0.2",
+    "@weaverkit/utils": "^0.0.3",
     "cls-hooked": "^4.2.2",
     "winston": "^3.2.1",
     "winston-daily-rotate-file": "^4.4.2"
