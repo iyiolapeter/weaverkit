@@ -5,7 +5,8 @@
     "lint": "eslint 'packages/**/**/*.ts'",
     "lint:fix": "eslint 'packages/**/**/*.ts' --fix",
     "format": "prettier --write \"packages/**/*.ts\"",
-    "prepare:commit": "lint-staged && npm run lint:fix && lerna run build"
+    "prepare:commit": "lint-staged && npm run lint:fix && lerna run build",
+    "publish": "lerna run build && lerna publish"
   },
   "devDependencies": {
     "@types/jest": "^25.1.4",
