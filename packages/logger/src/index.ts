@@ -1,8 +1,9 @@
 import { getUniqueReference } from "@weaverkit/utils";
 import { createNamespace, getNamespace } from "cls-hooked";
 import path from "path";
-import winston from "winston";
+import { createLogger, format, transports } from "winston";
 import LogRotator from "winston-daily-rotate-file";
+import * as Transport from "winston-transport";
 
 export const NAMESPACE = "log";
 const logNamespace = createNamespace(NAMESPACE);
@@ -11,47 +12,51 @@ export const getLogNamespace = () => {
 	return getNamespace(NAMESPACE);
 };
 
-const { createLogger, format, transports } = winston;
-let tracing = false;
-const logExtras = format((info) => {
-	if (tracing) {
-		info.level = info.level.toLocaleUpperCase();
-		const namespace = getNamespace(NAMESPACE);
-		if (namespace) {
-			const context = namespace.get("context");
-			if (context) {
-				info.context = context;
-			}
+export const UppercaseLevel = format((info) => {
+	info.level = info.level.toLocaleUpperCase();
+	return info;
+});
+
+export const LogContextId = format((info) => {
+	const namespace = getNamespace(NAMESPACE);
+	if (namespace) {
+		const contextId = namespace.get("ContextId");
+		if (contextId) {
+			info.ContextId = contextId;
 		}
 	}
 	return info;
 });
 
-export const requestTracer = () => {
-	tracing = true;
-	return (req: any, res: any, next: any) => {
-		if (logNamespace) {
-			const context = getUniqueReference();
-			res.set("X-Context-Id", context);
-			logNamespace.run(() => {
-				logNamespace.set("context", context);
-				next();
-			});
-		} else {
-			next();
-		}
-	};
+export const createContextId = (cb: (error: Error | null, contextId: string | false) => any) => {
+	if (!logNamespace) {
+		return cb(null, false);
+	}
+	const contextId = getUniqueReference();
+	logNamespace.run(() => {
+		logNamespace.set("ContextId", contextId);
+		cb(null, contextId);
+	});
+};
+
+const TRANSPORTS: Record<string, Transport> = {
+	console: new transports.Console({
+		level: "debug",
+		handleExceptions: true,
+		format: format.combine(
+			format.errors({ stack: true }),
+			format.timestamp(),
+			UppercaseLevel(),
+			LogContextId(),
+			format.colorize(),
+			format.simple(),
+		),
+		silent: false,
+	}),
 };
 
 export const Logger = createLogger({
-	transports: [
-		new transports.Console({
-			level: "debug",
-			handleExceptions: true,
-			format: format.combine(format.errors({ stack: true }), logExtras(), format.colorize(), format.simple()),
-			silent: false,
-		}),
-	],
+	transports: Object.values(TRANSPORTS),
 });
 
 // export default Logger;
@@ -63,13 +68,12 @@ export const LogStream = {
 };
 
 export const addFileLogging = (logDir: string) => {
-	Logger.add(
-		new LogRotator({
-			level: "debug",
-			handleExceptions: true,
-			format: format.combine(format.errors({ stack: true }), format.timestamp(), logExtras(), format.simple()),
-			silent: false,
-			filename: path.resolve(logDir, "%DATE%.log"),
-		}),
-	);
+	(TRANSPORTS.file = new LogRotator({
+		level: "debug",
+		handleExceptions: true,
+		format: format.combine(format.errors({ stack: true }), format.timestamp(), UppercaseLevel(), LogContextId(), format.simple()),
+		silent: false,
+		filename: path.resolve(logDir, "%DATE%.log"),
+	})),
+		Logger.add(TRANSPORTS.file);
 };
