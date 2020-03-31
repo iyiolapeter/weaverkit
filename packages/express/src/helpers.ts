@@ -1,14 +1,14 @@
-import { validationResult, matchedData, ErrorFormatter, MatchedDataOptions } from "express-validator";
+import { ErrorFormatter, MatchedDataOptions, matchedData, validationResult } from "express-validator";
+import { Request, RouterOptions, Router } from "express";
 import { ValidationError } from "@weaverkit/errors";
-import express from "express";
-
-export interface ValidatorOptions {
-	onlyValidData?: boolean;
-}
 
 export const isRouter = (router: any) => {
 	const proto = Object.getPrototypeOf(router);
-	return proto === express.Router;
+	return proto === Router;
+};
+
+export const createRouter = (options?: RouterOptions) => {
+	return Router(options);
 };
 
 export interface ExpressValidatorOptions {
@@ -19,7 +19,7 @@ export interface ExpressValidatorOptions {
 	};
 }
 
-export const validateRequest = (req: express.Request, options?: Partial<ExpressValidatorOptions>) => {
+export const validateRequest = (req: Request, options?: Partial<ExpressValidatorOptions>) => {
 	const defaults: ExpressValidatorOptions = {
 		errorFormatter({ msg, param }: any) {
 			return {

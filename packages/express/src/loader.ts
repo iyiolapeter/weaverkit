@@ -1,4 +1,4 @@
-import { isRouter, validateRequest, ExpressValidatorOptions } from "./helpers";
+import { createRouter, isRouter, validateRequest, ExpressValidatorOptions } from "./helpers";
 import { Artifact, Renderer } from "@weaverkit/data";
 import { ErrorHandler } from "@weaverkit/errors";
 import { PathParams } from "express-serve-static-core";
@@ -26,11 +26,11 @@ export type RouterPathAlias = string;
 
 export type RouteCollection = Record<string, RouterPathAlias | BaseExpressApp | express.Router>;
 
-interface IncomingRouter {
+export interface IncomingRouter {
 	router?: express.Router;
 }
 
-interface LoaderOptions {
+export interface LoaderOptions {
 	errorHandler: ErrorHandler;
 	contextResolver?: (req: express.Request) => any;
 	validatorOptions?: ExpressValidatorOptions;
@@ -66,7 +66,7 @@ export class RouteLoader {
 	}
 
 	public fromDefinition(definition: RouterDefinition, options: Partial<LoaderOptions> & IncomingRouter = {}) {
-		const router = options?.router || express.Router();
+		const router = options?.router || createRouter();
 		for (const [method, routes] of Object.entries(definition)) {
 			for (const route of routes as Required<Route[]>) {
 				if (method === "use") {
