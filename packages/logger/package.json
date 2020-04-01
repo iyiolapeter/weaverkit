@@ -18,13 +18,13 @@
     "test": "echo \"Error: run tests from root\" && exit 1"
   },
   "dependencies": {
+    "@types/cls-hooked": "^4.3.0",
     "@weaverkit/utils": "^0.0.6",
     "cls-hooked": "^4.2.2",
     "winston": "^3.2.1",
     "winston-daily-rotate-file": "^4.4.2"
   },
   "devDependencies": {
-    "@types/cls-hooked": "^4.3.0",
     "husky": "^4.2.3",
     "lint-staged": "^10.1.0"
   },
