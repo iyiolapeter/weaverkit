@@ -1,6 +1,6 @@
 {
   "name": "@weaverkit/data",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Collection of utility classes for any express powered rest api and others",
   "author": "Peter Smart <iyiolapeter@gmail.com>",
   "homepage": "",
@@ -18,8 +18,8 @@
     "test": "echo \"Error: run tests from root\" && exit 1"
   },
   "dependencies": {
-    "ejs": "^3.0.1",
-    "@types/ejs": "^3.0.1"
+    "@types/ejs": "^3.0.1",
+    "ejs": "^3.0.1"
   },
   "devDependencies": {
     "husky": "^4.2.3",
