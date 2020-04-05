@@ -1,9 +1,9 @@
-import { createRouter, isRouter, validateRequest, ExpressValidatorOptions } from "./helpers";
-import { Artifact, Renderer } from "@weaverkit/data";
-import { ErrorHandler } from "@weaverkit/errors";
+import { createRouter, isRouter, validateRequest, ExpressValidatorOptions, sendResponse } from "./helpers";
+import { ErrorHandler, ServerError } from "@weaverkit/errors";
 import { PathParams } from "express-serve-static-core";
 import { BaseExpressApp } from "./app";
 import express, { NextFunction } from "express";
+import { ValidationChain } from "express-validator";
 
 export type SupportedHttpMethods = "get" | "post" | "put" | "patch" | "delete" | "head" | "trace" | "all";
 
@@ -14,7 +14,7 @@ export type SubRouter = [PathParams, express.Router];
 
 export type ControllerFn = (data: any, context?: any) => any;
 
-export type Route = [PathParams, ...(MiddlewareSignature | NextMiddlewareSignature)[]];
+export type Route = [PathParams, ...(MiddlewareSignature | NextMiddlewareSignature | ValidationChain | ValidationChain[])[]];
 
 export interface SubRouterMount {
 	use?: SubRouter[];
@@ -26,6 +26,10 @@ export type RouterPathAlias = string;
 
 export type RouteCollection = Record<string, RouterPathAlias | BaseExpressApp | express.Router>;
 
+export interface CanUse {
+	use: (path: PathParams, handler: any) => any;
+}
+
 export interface IncomingRouter {
 	router?: express.Router;
 }
@@ -36,28 +40,20 @@ export interface LoaderOptions {
 	validatorOptions?: ExpressValidatorOptions;
 }
 
-export class RouteLoader {
-	public constructor(protected options: LoaderOptions) {}
-
-	public controller(controllerFn: ControllerFn, options?: Partial<LoaderOptions>) {
+export function RouteLoader(configOptions: LoaderOptions) {
+	function controller(controllerFn: ControllerFn, options?: Partial<LoaderOptions>) {
 		const {
 			contextResolver = (req: express.Request) => {
 				return (req as any).context || {};
 			},
 			validatorOptions,
 			errorHandler,
-		} = { ...this.options, ...options };
+		} = { ...configOptions, ...options };
 		const handler = async (req: express.Request, res: express.Response, next: NextFunction) => {
 			try {
 				const data = validateRequest(req, validatorOptions);
 				const result = await controllerFn(data, contextResolver(req));
-				if (result instanceof Artifact) {
-					res.status(result.httpCode).json(result.export());
-				} else if (result instanceof Renderer) {
-					res.status(result.httpCode).send(await result.render());
-				} else {
-					res.status(200).send(result);
-				}
+				sendResponse(res, result);
 			} catch (error) {
 				next(errorHandler.wrap(error));
 			}
@@ -65,7 +61,7 @@ export class RouteLoader {
 		return handler;
 	}
 
-	public fromDefinition(definition: RouterDefinition, options: Partial<LoaderOptions> & IncomingRouter = {}) {
+	function fromDefinition(definition: RouterDefinition, options: Partial<LoaderOptions> & IncomingRouter = {}) {
 		const router = options?.router || createRouter();
 		for (const [method, routes] of Object.entries(definition)) {
 			for (const route of routes as Required<Route[]>) {
@@ -80,7 +76,7 @@ export class RouteLoader {
 		return router;
 	}
 
-	public fromPath(modulePath: string) {
+	function fromPath(modulePath: string) {
 		try {
 			const router = require(modulePath); //eslint-disable-line @typescript-eslint/no-var-requires
 			if (isRouter(router)) {
@@ -91,4 +87,24 @@ export class RouteLoader {
 			throw error;
 		}
 	}
+
+	return {
+		controller,
+		fromDefinition,
+		fromPath,
+	};
 }
+
+export const mountCollection = (app: CanUse, collection: RouteCollection) => {
+	for (const [route, loc] of Object.entries(collection)) {
+		const handler = isRouter(loc)
+			? (loc as express.Router)
+			: loc instanceof BaseExpressApp
+			? loc.app
+			: new ServerError(`Handler defined at route ${route} is not an express router or ExpressApp`);
+		if (handler instanceof Error) {
+			throw handler;
+		}
+		app.use(route.startsWith("/") ? route : `/${route}`, handler);
+	}
+};

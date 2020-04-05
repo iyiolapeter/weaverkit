@@ -1,11 +1,10 @@
-import { ServerError, ErrorHandler } from "@weaverkit/errors";
+import { ErrorHandler, NotFoundError } from "@weaverkit/errors";
 import { EventEmitter } from "events";
-import { RouteCollection } from "./loader";
-import { isRouter } from "./helpers";
+import { RouteCollection, mountCollection } from "./loader";
 import bodyParser from "body-parser";
 import express from "express";
 import helmet from "helmet";
-import cors, { CorsOptions } from "cors";
+import cors from "cors";
 
 export class BaseExpressApp extends EventEmitter {
 	constructor(protected _app: express.Application, protected _init = true) {
@@ -27,7 +26,9 @@ export class BaseExpressApp extends EventEmitter {
 export interface WeaverExpressAppConfig {
 	routes: RouteCollection;
 	errorHandler: ErrorHandler;
-	cors?: boolean | CorsOptions;
+	use404Middleware?: boolean;
+	useErrorMiddleware?: boolean;
+	cors?: boolean | cors.CorsOptions;
 	helmet?: boolean | helmet.IHelmetConfiguration;
 	bodyParser?: {
 		json?: boolean | bodyParser.OptionsJson;
@@ -54,9 +55,13 @@ export class WeaverExpressApp extends BaseExpressApp {
 	}
 
 	private applyMiddlewares() {
-		const { cors: corsOpts, helmet: helmetOpts } = this.config;
-		this._app.use(helmet(this.extractOptions(helmetOpts)));
-		this._app.use(cors(this.extractOptions(corsOpts)));
+		const { cors: corsOpts = true, helmet: helmetOpts = true } = this.config;
+		if (helmetOpts !== false) {
+			this._app.use(helmet(this.extractOptions(helmetOpts)));
+		}
+		if (corsOpts !== false) {
+			this._app.use(cors(this.extractOptions(corsOpts)));
+		}
 		const { json = true, urlencoded = { extended: true }, text = false, raw = false } = this.config.bodyParser || {};
 		if (json !== false) {
 			this._app.use(bodyParser.json(this.extractOptions(json)));
@@ -79,38 +84,38 @@ export class WeaverExpressApp extends BaseExpressApp {
 
 	public init() {
 		this.preinit();
-		this.bindRoutes();
-		this.setErrorHandler();
 		super.init();
+		this.bindRoutes();
 		this.emit(WeaverExpressAppEvents.INIT, this._app);
+		const { use404Middleware = true, useErrorMiddleware = true } = this.config;
+		if (use404Middleware) {
+			this.applyPageNotFoundMiddleware();
+		}
+		if (useErrorMiddleware) {
+			this.applyErrorHandlerMiddleware();
+		}
 	}
 
-	protected setErrorHandler() {
+	protected applyPageNotFoundMiddleware() {
+		this._app.use(function (req, _res, next) {
+			next(new NotFoundError(`Cannot ${req.method} to requested resource ${req.url}`));
+		});
+	}
+
+	protected applyErrorHandlerMiddleware() {
 		const { errorHandler } = this.config;
-		this._app.use((error: Error, _req: express.Request, res: express.Response, next: express.NextFunction) => {
-			const wrapped = errorHandler.wrap(error);
-			errorHandler.handle(wrapped);
+		this._app.use((caught: Error, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+			const error = errorHandler.handle(caught);
 			if (res.headersSent) {
 				return next(error);
 			}
-			return res.status(wrapped.httpCode).send(wrapped.format());
+			return res.status(error.httpCode).send(errorHandler.format(error));
 		});
 	}
 
 	private bindRoutes() {
 		this.emit(WeaverExpressAppEvents.ROUTES_WILL_BIND, this._app);
-		const { routes } = this.config;
-		for (const [route, loc] of Object.entries(routes)) {
-			const handler = isRouter(loc)
-				? (loc as express.Router)
-				: loc instanceof BaseExpressApp
-				? loc.app
-				: new ServerError(`Handler defined at route ${route} is not an express router or ExpressApp`);
-			if (handler instanceof Error) {
-				throw handler;
-			}
-			this._app.use(`/${route}`, handler);
-		}
+		mountCollection(this._app, this.config.routes);
 		this.emit(WeaverExpressAppEvents.ROUTES_DID_BIND, this._app);
 	}
 }
