@@ -1,11 +1,8 @@
-export class Artifact {
-	public httpCode = 200;
+import { Sendable } from "./sendable";
 
-	constructor(public data: Record<string, any> | null = null, public message?: string) {}
-
-	public setHttpCode(httpCode: number) {
-		this.httpCode = httpCode;
-		return this;
+export class Artifact extends Sendable {
+	constructor(public data: Record<string, any> | null = null, public message?: string) {
+		super();
 	}
 
 	public export() {
@@ -13,5 +10,9 @@ export class Artifact {
 			message: this.message,
 			data: this.data,
 		};
+	}
+
+	public send() {
+		return this.export();
 	}
 }

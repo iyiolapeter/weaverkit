@@ -1,5 +1,6 @@
 import { resolve } from "path";
 import { render, renderFile, Options as EJSOptions } from "ejs";
+import { Sendable } from "./sendable";
 
 export interface Layout {
 	name: string;
@@ -17,9 +18,12 @@ export interface Renderable {
 	render(): Promise<string> | string;
 }
 
-export abstract class Renderer implements Renderable {
-	public httpCode = 200;
+export abstract class Renderer extends Sendable implements Renderable {
 	public abstract render(): Promise<string> | string;
+
+	public send() {
+		return this.render();
+	}
 }
 
 export interface EJSRenderConfig {
