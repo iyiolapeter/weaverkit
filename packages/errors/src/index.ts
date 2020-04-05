@@ -19,6 +19,9 @@ export abstract class AppError extends Error {
 		// restore prototype chain
 		this.name = this.constructor.name;
 		// Object.setPrototypeOf(this, new.target.prototype);
+		if (message) {
+			this.message = message;
+		}
 	}
 
 	public setCode(code: string | number) {
@@ -55,8 +58,8 @@ export abstract class AppError extends Error {
 		return ["code", "message", "info"];
 	}
 
-	public format(verbose = false) {
-		if (verbose) {
+	public format(withUnsafe = false) {
+		if (withUnsafe) {
 			return this;
 		}
 		return this.safeProps().reduce((props: Record<string, any>, value) => {
@@ -69,7 +72,10 @@ export abstract class AppError extends Error {
 export class BadRequestError extends AppError {
 	public httpCode = 400;
 	public code = "BAD_REQUEST_ERROR";
-	public message = "Bad Request.";
+
+	constructor(public message = "Bad Request.") {
+		super(message);
+	}
 }
 
 export class InvalidArgumentError extends BadRequestError {
@@ -78,43 +84,64 @@ export class InvalidArgumentError extends BadRequestError {
 
 export class InvalidActionError extends BadRequestError {
 	public code = "INVALID_ACTION_ERROR";
-	public message = "Requested action is invalid.";
+
+	constructor(public message = "Requested action is invalid.") {
+		super(message);
+	}
 }
 
 export class UnauthorizedError extends AppError {
 	public httpCode = 401;
 	public code = "UNAUTHORIZED_ERROR";
-	public message = "Unauthorized.";
+
+	constructor(public message = "Unauthorized.") {
+		super(message);
+	}
 }
 
 export class ForbiddenError extends AppError {
 	public httpCode = 403;
 	public code = "FORBIDDEN_ERROR";
-	public message = "Forbidden.";
+
+	constructor(public message = "Forbidden.") {
+		super(message);
+	}
 }
 
 export class NotFoundError extends AppError {
 	public httpCode = 404;
 	public code = "NOT_FOUND_ERROR";
-	public message = "Not found.";
+
+	constructor(public message = "Not found.") {
+		super(message);
+	}
 }
 
 export class ConflictError extends AppError {
 	public httpCode = 409;
 	public code = "CONFLICT_ERROR";
-	public message = "Conflict.";
+
+	constructor(public message = "Conflict.") {
+		super(message);
+	}
 }
 
 export class UnprocessibleEntityError extends AppError {
 	public httpCode = 422;
 	public code = "UNPROCESSIBLE_ENTITY_ERROR";
-	public message = "Unprocessible Entity.";
+
+	constructor(public message = "Unprocessible Entity.") {
+		super(message);
+	}
 }
 
 export class ValidationError extends UnprocessibleEntityError {
 	public code = "INPUT_VALIDATION_ERROR";
-	public message = "One or more fields in supplied input raised validation errors.";
 	public fields!: any;
+
+	constructor(public message = "One or more fields in supplied input raised validation errors.") {
+		super(message);
+	}
 
 	public setFields(fields: any) {
 		this.fields = fields;
@@ -129,7 +156,10 @@ export class ValidationError extends UnprocessibleEntityError {
 export class ServiceUnavailableError extends AppError {
 	public httpCode = 503;
 	public code = "SERVICE_UNAVAILABLE_ERROR";
-	public message = "Service Unavailable.";
+
+	constructor(public message = "Service Unavailable.") {
+		super(message);
+	}
 
 	public serviceName?: string;
 
@@ -141,11 +171,14 @@ export class ServiceUnavailableError extends AppError {
 export class ServerError extends AppError {
 	public httpCode = 500;
 	public code = "SERVER_ERROR";
-	public message = "Server Error.";
+
+	constructor(public message = "Server Error.") {
+		super(message);
+	}
 }
 
 export class HttpError extends AppError {
-	public code = "";
+	public code = "HTTP_ERROR";
 	constructor(public httpCode: number, message?: string) {
 		super(message);
 	}
@@ -160,12 +193,14 @@ export class ErrorHandler extends EventEmitter {
 	}
 
 	handle(error: Error) {
-		this.emit("handle", error);
+		const wrapped = this.wrap(error);
+		this.emit("handle", wrapped);
+		return wrapped;
 	}
 
 	format(error: Error, verbose = false) {
 		const formatted = this.wrap(error).format(verbose);
-		this.emit("format", formatted);
-		return formatted;
+		this.emit("format", formatted, verbose);
+		return { error: formatted };
 	}
 }
