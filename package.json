@@ -7,7 +7,7 @@
     "lint": "eslint 'packages/**/**/*.ts'",
     "lint:fix": "eslint 'packages/**/**/*.ts' --fix",
     "format": "prettier --write \"packages/**/*.ts\"",
-    "commit": "git-cz --retry",
+    "commit": "git-cz",
     "prepare:commit": "lint-staged && npm run lint:fix && lerna run build",
     "publish": "lerna run build && lerna publish"
   },
@@ -51,7 +51,9 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "npm run prepare:commit"
+      "prepare-commit-msg": "exec < /dev/tty && git cz --hook || true",
+      "pre-commit": "npm run prepare:commit",
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
     }
   },
   "config": {
