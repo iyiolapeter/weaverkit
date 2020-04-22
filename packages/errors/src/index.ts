@@ -184,7 +184,17 @@ export class HttpError extends AppError {
 	}
 }
 
+export interface ErrorHandlerFormat {
+	envelope?: boolean;
+	envelopeKey?: string;
+}
+export interface ErrorHandlerOptions {
+	format?: ErrorHandlerFormat;
+}
 export class ErrorHandler extends EventEmitter {
+	constructor(private options: ErrorHandlerOptions = {}) {
+		super();
+	}
 	wrap(error: Error) {
 		if (error instanceof AppError) {
 			return error;
@@ -198,9 +208,13 @@ export class ErrorHandler extends EventEmitter {
 		return wrapped;
 	}
 
-	format(error: Error, verbose = false) {
-		const formatted = this.wrap(error).format(verbose);
-		this.emit("format", formatted, verbose);
-		return { error: formatted };
+	format(error: Error, withUnsafe = false) {
+		const { envelope = true, envelopeKey = "error" } = this.options.format || {};
+		const formatted = { format: this.wrap(error).format(withUnsafe) };
+		this.emit("format", formatted, withUnsafe);
+		if (!envelope) {
+			return formatted.format;
+		}
+		return { [envelopeKey]: formatted.format };
 	}
 }
