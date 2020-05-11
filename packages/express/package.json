@@ -1,6 +1,6 @@
 {
   "name": "@weaverkit/express",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "> TODO: description",
   "author": "Peter Smart <iyiolapeter@gmail.com>",
   "homepage": "",
@@ -21,8 +21,8 @@
   "dependencies": {
     "@types/cors": "^2.8.6",
     "@types/helmet": "0.0.45",
-    "@weaverkit/data": "^0.0.9",
-    "@weaverkit/errors": "^0.0.9",
+    "@weaverkit/data": "^0.0.10",
+    "@weaverkit/errors": "^0.0.10",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "helmet": "^3.22.0"

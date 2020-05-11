@@ -1,6 +1,6 @@
 {
   "name": "@weaverkit/adapters.redis",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "> TODO: description",
   "author": "Peter Smart <iyiolapeter@gmail.com>",
   "homepage": "",
@@ -22,7 +22,7 @@
   },
   "gitHead": "302e89539960cb904d0f1e5a136859a453c5a435",
   "dependencies": {
-    "@weaverkit/adapters.base": "^0.0.9"
+    "@weaverkit/adapters.base": "^0.0.10"
   },
   "devDependencies": {
     "husky": "^4.2.3",
