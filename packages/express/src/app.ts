@@ -1,4 +1,4 @@
-import { ErrorHandler, NotFoundError } from "@weaverkit/errors";
+import { ErrorHandler, NotFoundError, AppError } from "@weaverkit/errors";
 import { EventEmitter } from "events";
 import { RouteCollection, mountCollection } from "./loader";
 import bodyParser from "body-parser";
@@ -23,11 +23,13 @@ export class BaseExpressApp extends EventEmitter {
 	}
 }
 
+export type RenderError = (error: AppError, format: any, req: express.Request, res: express.Response) => boolean | Promise<boolean>;
 export interface WeaverExpressAppConfig {
 	routes: RouteCollection;
 	errorHandler: ErrorHandler;
 	use404Middleware?: boolean;
 	useErrorMiddleware?: boolean;
+	renderError?: RenderError;
 	cors?: boolean | cors.CorsOptions;
 	helmet?: boolean | helmet.IHelmetConfiguration;
 	bodyParser?: {
@@ -103,13 +105,20 @@ export class WeaverExpressApp extends BaseExpressApp {
 	}
 
 	protected applyErrorHandlerMiddleware() {
-		const { errorHandler } = this.config;
-		this._app.use((caught: Error, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+		const { errorHandler, renderError } = this.config;
+		this._app.use(async (caught: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
 			const error = errorHandler.handle(caught);
 			if (res.headersSent) {
 				return next(error);
 			}
-			return res.status(error.httpCode).send(errorHandler.format(error));
+			const format = errorHandler.format(error);
+			if (renderError) {
+				const rendered = await renderError(error, format, req, res);
+				if (rendered) {
+					return;
+				}
+			}
+			return res.status(error.httpCode).send(format);
 		});
 	}
 
