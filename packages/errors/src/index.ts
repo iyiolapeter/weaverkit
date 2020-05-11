@@ -165,6 +165,7 @@ export class ServiceUnavailableError extends AppError {
 
 	public setServiceName(serviceName: string) {
 		this.serviceName = serviceName;
+		return this;
 	}
 }
 
