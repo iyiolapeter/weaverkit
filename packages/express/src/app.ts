@@ -1,6 +1,7 @@
 import { ErrorHandler, NotFoundError, AppError } from "@weaverkit/errors";
 import { EventEmitter } from "events";
-import { RouteCollection, mountCollection } from "./loader";
+import { MountCollection } from "./helpers";
+import { RouteCollection } from "./interfaces";
 import bodyParser from "body-parser";
 import express from "express";
 import helmet from "helmet";
@@ -23,13 +24,18 @@ export class BaseExpressApp extends EventEmitter {
 	}
 }
 
-export type RenderError = (error: AppError, format: any, req: express.Request, res: express.Response) => boolean | Promise<boolean>;
+export type RenderErrorInterceptor = (
+	error: AppError,
+	format: any,
+	req: express.Request,
+	res: express.Response,
+) => boolean | Promise<boolean>;
 export interface WeaverExpressAppConfig {
 	routes: RouteCollection;
 	errorHandler: ErrorHandler;
 	use404Middleware?: boolean;
 	useErrorMiddleware?: boolean;
-	renderError?: RenderError;
+	renderError?: RenderErrorInterceptor;
 	cors?: boolean | cors.CorsOptions;
 	helmet?: boolean | helmet.IHelmetConfiguration;
 	bodyParser?: {
@@ -85,17 +91,20 @@ export class WeaverExpressApp extends BaseExpressApp {
 	}
 
 	public init() {
-		this.preinit();
-		super.init();
-		this.bindRoutes();
-		this.emit(WeaverExpressAppEvents.INIT, this._app);
-		const { use404Middleware = true, useErrorMiddleware = true } = this.config;
-		if (use404Middleware) {
-			this.applyPageNotFoundMiddleware();
+		if (!this._init) {
+			this.preinit();
+			super.init();
+			this.bindRoutes();
+			this.emit(WeaverExpressAppEvents.INIT, this._app);
+			const { use404Middleware = true, useErrorMiddleware = true } = this.config;
+			if (use404Middleware) {
+				this.applyPageNotFoundMiddleware();
+			}
+			if (useErrorMiddleware) {
+				this.applyErrorHandlerMiddleware();
+			}
 		}
-		if (useErrorMiddleware) {
-			this.applyErrorHandlerMiddleware();
-		}
+		return this;
 	}
 
 	protected applyPageNotFoundMiddleware() {
@@ -124,7 +133,7 @@ export class WeaverExpressApp extends BaseExpressApp {
 
 	private bindRoutes() {
 		this.emit(WeaverExpressAppEvents.ROUTES_WILL_BIND, this._app);
-		mountCollection(this._app, this.config.routes);
+		MountCollection(this._app, this.config.routes);
 		this.emit(WeaverExpressAppEvents.ROUTES_DID_BIND, this._app);
 	}
 }
