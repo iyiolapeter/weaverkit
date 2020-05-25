@@ -75,6 +75,20 @@ export class RedisHash<T = Record<string, any>> extends Map<keyof T, any> {
 			});
 	}
 
+	public static async save(key: string, data: RedisHash | Record<string, any>, options: RedisHashSaveOptions = {}) {
+		const { expire, adapter } = options;
+		const connection = RedisStorageAdapter.ensure(adapter);
+		const entries = Array.from(data instanceof Map ? data : Object.entries(data), (entry) => {
+			entry[1] = serialize(entry[1]);
+			return entry as HashEntry;
+		});
+		const saved = await connection.hmset(key, ...entries);
+		if (saved && expire) {
+			await connection.expire(key, expire);
+		}
+		return saved;
+	}
+
 	// tslint:disable-next-line: variable-name
 	private __key: string;
 
@@ -94,17 +108,7 @@ export class RedisHash<T = Record<string, any>> extends Map<keyof T, any> {
 	}
 
 	public async save(options: RedisHashSaveOptions = {}) {
-		const { expire, adapter } = options;
-		const connection = RedisStorageAdapter.ensure(adapter);
-		const entries = Array.from(this, (entry) => {
-			entry[1] = serialize(entry[1]);
-			return entry as HashEntry;
-		});
-		const saved = await connection.hmset(this.getKey(), ...entries);
-		if (saved && expire) {
-			await connection.expire(this.getKey(), expire);
-		}
-		return saved;
+		return RedisHash.save(this.getKey(), this, options);
 	}
 
 	public toObject() {
