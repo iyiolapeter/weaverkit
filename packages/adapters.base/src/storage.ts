@@ -28,7 +28,7 @@ export abstract class BaseStorageAdapter<T = any, C = any> {
 		this.config = { ...this.defaultConfig(), ...options } as C;
 		this.#connection = this.createConnection(this.config);
 		if (makeDefault) {
-			this.#self._defaultConnection = this;
+			this.#self._defaultConnection = this.#connection;
 		}
 		return this;
 	}
