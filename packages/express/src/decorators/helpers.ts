@@ -112,7 +112,7 @@ export const ApplyRoute = (
 	router[verb](
 		path,
 		...middlewares.before,
-		RequestHandlerFactory(controller[method], resolvers, {
+		RequestHandlerFactory(controller[method].bind(controller), resolvers, {
 			shouldNext: !!middlewares.after.length,
 			handleResponse: !metadata.has(RESPONSE_HANDLED),
 		}),
