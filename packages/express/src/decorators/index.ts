@@ -76,3 +76,4 @@ export * from "./controller";
 export * from "./middleware";
 export * from "./http-verbs";
 export * from "./args";
+export * from "./validation";
