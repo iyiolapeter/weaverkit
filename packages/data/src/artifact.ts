@@ -1,7 +1,7 @@
 import { Sendable } from "./sendable";
 
-export class Artifact extends Sendable {
-	constructor(public data: Record<string, any> | null = null, public message?: string) {
+export class Artifact<T = Record<string, any>> extends Sendable {
+	constructor(public data: T | null = null, public message?: string) {
 		super();
 	}
 

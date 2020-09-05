@@ -20,7 +20,7 @@ export const CreateArgDecorator = (resolver: ArgResolver, key?: string | symbol)
 
 export const Body = (key?: string | symbol) => RegisterArgDecorator(ARG.BODY, key);
 export const Param = (key?: string | symbol) => RegisterArgDecorator(ARG.PARAMS, key);
-export const Headers = (key?: string | symbol) => RegisterArgDecorator(ARG.HEADER, key);
+export const Headers = (key?: string | symbol) => RegisterArgDecorator(ARG.HEADERS, key);
 export const Query = (key?: string | symbol) => RegisterArgDecorator(ARG.QUERY, key);
 
 export const Req = () => RegisterArgDecorator(ARG.REQUEST);

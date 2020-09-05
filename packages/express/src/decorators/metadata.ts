@@ -12,7 +12,7 @@ export const METADATA = Object.freeze({
 
 export const ARG = Object.freeze({
 	BODY: Symbol("Body"),
-	HEADER: Symbol("Header"),
+	HEADERS: Symbol("Headers"),
 	NEXT: Symbol("Next"),
 	PARAMS: Symbol("Params"),
 	QUERY: Symbol("Query"),

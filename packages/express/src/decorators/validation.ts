@@ -14,8 +14,11 @@ import { Use } from "./middleware";
 import { Request, Response, NextFunction } from "express";
 import { ValidationError } from "@weaverkit/errors";
 import { Middleware } from "express-validator/src/base";
+import { ExpressValidatorOptions } from "../helpers";
 
 export type FieldConstraint = Omit<ParamSchema, "in">;
+
+export type { Location } from "express-validator";
 
 export const SCHEMA_SYMBOL = Symbol("Schema");
 export const ONEOF_SCHEMA_SYMBOL = Symbol("OneofSchema");
@@ -54,15 +57,41 @@ export const OneOf = (chains: (ValidationChain | ValidationChain[])[], message?:
 	};
 };
 
-export const CreateValidationMiddleware = (locations: Location[]) => {
+interface DefaultsShape {
+	validator: Required<ExpressValidatorOptions>;
+}
+
+const DEFAULTS: DefaultsShape = {
+	validator: {
+		errorFormatter: ({ msg, param }: any) => {
+			return {
+				parameter: param,
+				message: msg,
+			};
+		},
+		errorOptions: { onlyFirstError: true },
+		matchedDataOptions: { onlyValidData: true, includeOptionals: true },
+	},
+};
+
+export const SetGlobalValidationOptions = (options: Partial<ExpressValidatorOptions>) => {
+	DEFAULTS.validator = { ...DEFAULTS.validator, ...options };
+};
+
+export const CreateValidationMiddleware = (locations: Location[], options: ExpressValidatorOptions = {}) => {
 	return (req: Request, _res: Response, next: NextFunction) => {
-		const errors = validationResult(req);
+		const {
+			errorFormatter = DEFAULTS.validator.errorFormatter,
+			errorOptions = DEFAULTS.validator.errorOptions,
+			matchedDataOptions = DEFAULTS.validator.matchedDataOptions,
+		} = options;
+		const errors = validationResult(req).formatWith(errorFormatter);
 		if (!errors.isEmpty()) {
-			throw new ValidationError().setFields(errors.array());
+			throw new ValidationError().setFields(errors.array(errorOptions));
 		}
 		const validated: Record<Location, any> = (req as any)[VALIDATED_REQUEST_SYMBOL] ?? {};
 		locations.forEach((location) => {
-			validated[location] = matchedData(req, { locations: [location] });
+			validated[location] = matchedData(req, { ...matchedDataOptions, locations: [location] });
 		});
 		(req as any)[VALIDATED_REQUEST_SYMBOL] = validated;
 		return next();
@@ -89,15 +118,46 @@ export const GetSchemaValidators = (objects: ClassType<any>[]) => {
 			});
 		}
 	}
-	return { validators, locations };
+	return { validators, locations: Array.from(locations) };
 };
 
-export const UseValidator = (objects: ClassType<any>[]) => {
+type RequireAtLeastOne<T, Keys extends keyof T = keyof T> = Pick<T, Exclude<keyof T, Keys>> &
+	{
+		[K in Keys]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<Keys, K>>>;
+	}[Keys];
+
+interface UseValidatorConfig {
+	objects: ClassType<any>[];
+	chains: [ValidationChain[], Location[]];
+}
+
+export function UseValidator(
+	input: RequireAtLeastOne<UseValidatorConfig, "chains" | "objects"> | ClassType<any>[],
+	options?: ExpressValidatorOptions,
+) {
+	let chains: (ValidationChain | Middleware)[] = [];
+	let objects: ClassType<any>[] = [];
+	const locations = new Set<Location>();
+	if (Array.isArray(input)) {
+		objects = input;
+	} else {
+		if (input.objects) {
+			objects = input.objects;
+		}
+		if (input.chains) {
+			chains = input.chains[0];
+			input.chains[1].forEach(locations.add, locations);
+		}
+	}
 	return (target: any, property: string, descriptor: PropertyDescriptor) => {
-		const { validators, locations } = GetSchemaValidators(objects);
-		return Use([...validators, CreateValidationMiddleware(Array.from(locations))], "before")(target, property, descriptor);
+		if (objects.length) {
+			const result = GetSchemaValidators(objects);
+			chains.push(...result.validators);
+			result.locations.forEach(locations.add, locations);
+		}
+		return Use([...chains, CreateValidationMiddleware(Array.from(locations), options)], "before")(target, property, descriptor);
 	};
-};
+}
 
 export const RunImperative = async (validator: ValidationChain | Middleware, req: Request, res?: Response) => {
 	return new Promise((resolve, reject) => {

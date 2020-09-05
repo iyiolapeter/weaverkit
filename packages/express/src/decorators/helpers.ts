@@ -3,6 +3,7 @@ import { Request, Response, Router, NextFunction } from "express";
 import { SendResponse } from "../helpers";
 import { ARG, METADATA, RESPONSE_HANDLED, GetClassMetadata, SetClassMetadata } from "./metadata";
 import { MiddlewareStorage } from "./middleware";
+import { VALIDATED_REQUEST_SYMBOL, Location } from "./validation";
 
 export const ExtractArg = (obj: any, key?: any) => {
 	if (!key) {
@@ -13,18 +14,26 @@ export const ExtractArg = (obj: any, key?: any) => {
 
 export type ArgResolver = (req: Request, key?: string | symbol) => any;
 
+const PreferValidated = (req: Request, location: Location) => {
+	const validated = (req as any)[VALIDATED_REQUEST_SYMBOL];
+	if (validated && validated[location] !== undefined) {
+		return validated[location];
+	}
+	return req[location];
+};
+
 export const ARG_RESOLVER = {
 	[ARG.BODY]: (req: Request, key: any) => {
-		return ExtractArg(req.body, key);
+		return ExtractArg(PreferValidated(req, "body"), key);
 	},
 	[ARG.PARAMS]: (req: Request, key: any) => {
-		return ExtractArg(req.params, key);
+		return ExtractArg(PreferValidated(req, "params"), key);
 	},
 	[ARG.QUERY]: (req: Request, key: any) => {
-		return ExtractArg(req.query, key);
+		return ExtractArg(PreferValidated(req, "query"), key);
 	},
-	[ARG.HEADER]: (req: Request, key: any) => {
-		return ExtractArg(req.headers, key);
+	[ARG.HEADERS]: (req: Request, key: any) => {
+		return ExtractArg(PreferValidated(req, "headers"), key);
 	},
 };
 

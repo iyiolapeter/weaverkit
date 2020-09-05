@@ -7,7 +7,7 @@ import { BaseExpressApp } from "./app";
 
 export interface ExpressValidatorOptions {
 	matchedDataOptions?: Partial<MatchedDataOptions>;
-	errorFormatter: ErrorFormatter;
+	errorFormatter?: ErrorFormatter;
 	errorOptions?: {
 		onlyFirstError?: boolean;
 	};
@@ -28,27 +28,23 @@ export const CreateRouter = (options?: RouterOptions) => {
 	return Router(options);
 };
 
-export const ValidateRequest = (req: Request, options?: Partial<ExpressValidatorOptions>) => {
-	const defaults: ExpressValidatorOptions = {
-		errorFormatter({ msg, param }: any) {
-			return {
-				parameter: param,
-				message: msg,
-			};
-		},
-		matchedDataOptions: {
-			onlyValidData: true,
-		},
-		errorOptions: {
-			onlyFirstError: true,
-		},
-		...options,
+export const ValidateRequest = (req: Request, options: ExpressValidatorOptions = {}) => {
+	const defaultErrorFormatter = ({ msg, param }: any) => {
+		return {
+			parameter: param,
+			message: msg,
+		};
 	};
-	const errors = validationResult(req).formatWith(defaults.errorFormatter);
+	const {
+		errorFormatter = defaultErrorFormatter,
+		errorOptions = { onlyFirstError: true },
+		matchedDataOptions = { onlyValidData: true, includeOptionals: true },
+	} = options;
+	const errors = validationResult(req).formatWith(errorFormatter);
 	if (!errors.isEmpty()) {
-		throw new ValidationError().setFields(errors.array(defaults.errorOptions));
+		throw new ValidationError().setFields(errors.array(errorOptions));
 	}
-	const data = matchedData(req, defaults.matchedDataOptions);
+	const data = matchedData(req, matchedDataOptions);
 	return data;
 };
 
@@ -65,7 +61,7 @@ export const SendResponse = (res: Response, result: any) => {
 			return res.redirect(result.httpCode, result.location);
 		}
 		result.emitter.emit("beforesend");
-		res.status(result.httpCode).json(result.send());
+		res.status(result.httpCode).send(result.send());
 		return result.emitter.emit("aftersend");
 	} else {
 		res.status(200).send(result);

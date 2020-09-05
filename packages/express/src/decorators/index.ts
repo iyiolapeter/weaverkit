@@ -77,3 +77,4 @@ export * from "./middleware";
 export * from "./http-verbs";
 export * from "./args";
 export * from "./validation";
+export * from "./metadata";

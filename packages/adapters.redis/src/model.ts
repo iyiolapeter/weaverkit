@@ -4,7 +4,7 @@ export const makeKey = (key: string, prefix = "") => {
 	return prefix === "" || prefix.endsWith(":") ? `${prefix}${key}` : `${prefix}:${key}`;
 };
 
-const serialize = (data: string | any[] | object) => {
+const serialize = (data: string | any[] | Record<string, any>) => {
 	if (typeof data === "string" || typeof data === "number") {
 		return String(data);
 	} else if (Array.isArray(data) || typeof data === "object") {
@@ -126,7 +126,7 @@ export interface HasPrefix {
 export interface KeyValGetOptions extends HasAdapter, HasKey, Partial<HasPrefix> {}
 
 export interface KeyValSetOptions extends HasAdapter, HasKey, Partial<HasPrefix> {
-	value: string | any[] | object;
+	value: string | any[] | Record<string, any>;
 	ttl?: ["EX" | "PX", number] | null;
 	condition?: "NX" | "XX";
 }
