@@ -1,6 +1,6 @@
 {
   "name": "@weaverkit/express",
-  "version": "0.0.12-rc4",
+  "version": "0.0.12",
   "description": "> TODO: description",
   "author": "Peter Smart <iyiolapeter@gmail.com>",
   "homepage": "",
@@ -26,17 +26,17 @@
     "helmet": "^3.22.0"
   },
   "devDependencies": {
-    "@weaverkit/data": "^0.0.11",
-    "@weaverkit/errors": "^0.0.11",
     "@types/express": "^4.17.4",
+    "@weaverkit/data": "^0.0.12",
+    "@weaverkit/errors": "^0.0.12",
     "express": "^4.17.1",
     "express-validator": "^6.6.1",
     "reflect-metadata": "^0.1.13"
   },
   "peerDependencies": {
+    "@types/express": "^4.17.4",
     "@weaverkit/data": "^0.0.11",
     "@weaverkit/errors": "^0.0.11",
-    "@types/express": "^4.17.4",
     "express": "^4.17.1",
     "express-validator": "^6.6.1",
     "reflect-metadata": "^0.1.13"
