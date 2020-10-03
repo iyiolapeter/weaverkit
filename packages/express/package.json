@@ -1,6 +1,6 @@
 {
   "name": "@weaverkit/express",
-  "version": "0.0.12",
+  "version": "0.0.13-rc0",
   "description": "> TODO: description",
   "author": "Peter Smart <iyiolapeter@gmail.com>",
   "homepage": "",
@@ -16,6 +16,7 @@
   "scripts": {
     "start": "ts-node server/index.ts",
     "build": "tsc",
+    "build:watch": "tsc --watch",
     "test": "echo \"Error: run tests from root\" && exit 1"
   },
   "dependencies": {
