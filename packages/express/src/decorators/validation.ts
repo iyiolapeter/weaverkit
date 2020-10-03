@@ -13,10 +13,14 @@ import { ClassType } from "../interfaces";
 import { Use } from "./middleware";
 import { Request, Response, NextFunction } from "express";
 import { ValidationError } from "@weaverkit/errors";
-import { Middleware } from "express-validator/src/base";
+import { CustomValidator, Middleware } from "express-validator/src/base";
 import { ExpressValidatorOptions } from "../helpers";
 
-export type FieldConstraint = Omit<ParamSchema, "in">;
+export interface ValidateIf {
+	$if?: ValidationChain | CustomValidator;
+}
+
+export type FieldConstraint = Omit<ParamSchema, "in"> & ValidateIf;
 
 export type { Location } from "express-validator";
 
@@ -39,6 +43,29 @@ export const Constraint = (constraints: FieldConstraint | FieldConstraint[]) => 
 			schema[property] = [];
 		}
 		Array.isArray(constraints) ? schema[property].push(...constraints) : schema[property].push(constraints);
+		SetClassMetadata(SCHEMA_SYMBOL, target, schema);
+	};
+};
+
+export type ExtraRules<T> = {
+	[key in keyof T]?: FieldConstraint;
+};
+
+export const NestedConstraint = <T>(obj: ClassType<T> | [ClassType<T>], extraRules?: ExtraRules<T>) => {
+	return (target: any, property: string) => {
+		const schema = GetClassMetadata<Record<string, FieldConstraint[]>>(SCHEMA_SYMBOL, target, {});
+		const objectSchema = GetClassMetadata<Record<string, FieldConstraint[]>>(
+			SCHEMA_SYMBOL,
+			Array.isArray(obj) ? obj[0].prototype : obj.prototype,
+			{},
+		);
+		const linker = Array.isArray(obj) ? ".*." : ".";
+		for (const [field, constraints] of Object.entries(objectSchema)) {
+			if (extraRules && (extraRules as any)[field]) {
+				constraints.push((extraRules as any)[field]);
+			}
+			schema[`${property}${linker}${field}`] = constraints;
+		}
 		SetClassMetadata(SCHEMA_SYMBOL, target, schema);
 	};
 };
@@ -98,6 +125,43 @@ export const CreateValidationMiddleware = (locations: Location[], options: Expre
 	};
 };
 
+export const ConstraintToValidator = (field: string, { $if, ...constraint }: FieldConstraint, location: Location) => {
+	const chain = checkSchema({ [field]: constraint }, [location])[0];
+	if ($if === undefined) {
+		return chain;
+	}
+	if (!(($if as ValidationChain).run && typeof ($if as ValidationChain).run === "function") && typeof $if !== "function") {
+		throw new Error(`$if predicate passed for ${field} is not a function`);
+	}
+	const middleware: Middleware = async (req, _res, next) => {
+		try {
+			let passed = false;
+			if (($if as ValidationChain).run && typeof ($if as ValidationChain).run === "function") {
+				const errors = await ($if as ValidationChain).run(req, { dryRun: true });
+				if (!errors.isEmpty()) {
+					return next();
+				}
+				passed = true;
+			} else if (typeof $if === "function") {
+				passed = !!(await ($if as CustomValidator)(req[location], {
+					req,
+					location,
+					path: field,
+				}));
+			} else {
+				throw new Error(`$if predicate passed for ${field} is not a function`);
+			}
+			if (!passed) {
+				return next();
+			}
+			return await chain.run(req).then(() => next());
+		} catch (error) {
+			next(error);
+		}
+	};
+	return middleware;
+};
+
 export const GetSchemaValidators = (objects: ClassType<any>[]) => {
 	const validators: (ValidationChain | Middleware)[] = [];
 	const locations = new Set<Location>();
@@ -114,7 +178,7 @@ export const GetSchemaValidators = (objects: ClassType<any>[]) => {
 		const schema = GetClassMetadata<Record<string, FieldConstraint[]>>(SCHEMA_SYMBOL, obj.prototype, {});
 		for (const [field, constraints] of Object.entries(schema)) {
 			constraints.forEach((constraint) => {
-				validators.push(...checkSchema({ [field]: constraint }, [location]));
+				validators.push(ConstraintToValidator(field, constraint, location));
 			});
 		}
 	}
