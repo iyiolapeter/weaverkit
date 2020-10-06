@@ -37,10 +37,10 @@ export const ARG_RESOLVER = {
 	},
 };
 
-export const ResolveArgs = (args: any[], ctx: { req: Request; res: Response; next: NextFunction }) => {
-	return args.map(([resolver, key]) => {
+export const ResolveArgs = async (resolvers: any[], ctx: { req: Request; res: Response; next: NextFunction }) => {
+	const args = resolvers.map(async ([resolver, key]) => {
 		if (typeof resolver === "function") {
-			return resolver(ctx.req, key);
+			return await resolver(ctx.req, key);
 		}
 		if (typeof resolver !== "symbol") {
 			throw new Error("Invalid param resolver");
@@ -56,9 +56,10 @@ export const ResolveArgs = (args: any[], ctx: { req: Request; res: Response; nex
 				if (!ARG_RESOLVER[resolver as any]) {
 					throw new Error("Invalid param resolver");
 				}
-				return ARG_RESOLVER[resolver as any](ctx.req, key);
+				return await ARG_RESOLVER[resolver as any](ctx.req, key);
 		}
 	});
+	return await Promise.all(args);
 };
 
 export const GetRoutes = (target: any, init: (string | symbol)[] = []) => {
@@ -95,7 +96,8 @@ export const RequestHandlerFactory = (action: (...args: any[]) => any, resolvers
 	const { handleResponse, shouldNext } = options;
 	return async (req: Request, res: Response, next: NextFunction) => {
 		try {
-			const data = await action(...ResolveArgs(resolvers, { req, res, next }));
+			const args = await ResolveArgs(resolvers, { req, res, next });
+			const data = await action(...args);
 			if (handleResponse) {
 				SendResponse(res, data);
 			}
