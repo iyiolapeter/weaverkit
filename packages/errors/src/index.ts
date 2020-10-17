@@ -1,13 +1,15 @@
 import { EventEmitter } from "events";
 
 export abstract class AppError extends Error {
+	public static LOGGABLE_DEFAULT = true;
+	public static REPORTABLE_DEFAULT = true;
 	public abstract httpCode: number;
 	public abstract code: string | number;
 
 	public message!: string;
 
-	public loggable = true;
-	public reportable = true;
+	public loggable: boolean;
+	public reportable: boolean;
 	public info!: any;
 
 	public inner!: Error;
@@ -19,6 +21,8 @@ export abstract class AppError extends Error {
 		// restore prototype chain
 		this.name = this.constructor.name;
 		// Object.setPrototypeOf(this, new.target.prototype);
+		this.loggable = new.target.LOGGABLE_DEFAULT;
+		this.reportable = new.target.REPORTABLE_DEFAULT;
 		if (message) {
 			this.message = message;
 		}
@@ -211,7 +215,8 @@ export class ErrorHandler extends EventEmitter {
 
 	format(error: Error, withUnsafe = false) {
 		const { envelope = true, envelopeKey = "error" } = this.options.format || {};
-		const formatted = { format: this.wrap(error).format(withUnsafe) };
+		const wrapped = this.wrap(error);
+		const formatted = { format: wrapped.format(withUnsafe), error: wrapped };
 		this.emit("format", formatted, withUnsafe);
 		if (!envelope) {
 			return formatted.format;
