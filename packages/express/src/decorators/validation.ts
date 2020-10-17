@@ -29,21 +29,49 @@ export const ONEOF_SCHEMA_SYMBOL = Symbol("OneofSchema");
 export const SCHEMA_LOCATION_SYMBOL = Symbol("SchemaLocation");
 export const VALIDATED_REQUEST_SYMBOL = Symbol("ValidatedRequest");
 
+const MergeSchema = (first: Record<string, FieldConstraint[]>, second: Record<string, FieldConstraint[]>) => {
+	const merged = Object.assign({}, first);
+	for (const [key, constraints] of Object.entries(second)) {
+		if (merged[key]) {
+			merged[key].concat(constraints);
+			continue;
+		}
+		merged[key] = constraints;
+	}
+	return merged;
+};
+
+const GetSchema = (prototype: any) => {
+	return GetClassMetadata<Record<string, FieldConstraint[]>>(SCHEMA_SYMBOL, prototype, {});
+};
+
+const SetSchema = (prototype: any, schema: Record<string, FieldConstraint[]>) => {
+	SetClassMetadata(SCHEMA_SYMBOL, prototype, schema);
+};
+
 export const ValidationObject = (location: Location) => {
 	return (target: ClassType<any>) => {
 		SetClassMetadata(SCHEMA_LOCATION_SYMBOL, target.prototype, location);
+		const parent = Object.getPrototypeOf(target.prototype).constructor;
+		if (parent.name !== "Object") {
+			const parentSchema = GetSchema(parent.prototype);
+			if (Object.keys(parentSchema).length) {
+				const schema = GetSchema(target.prototype);
+				SetSchema(target.prototype, MergeSchema(parentSchema, schema));
+			}
+		}
 		return target;
 	};
 };
 
 export const Constraint = (constraints: FieldConstraint | FieldConstraint[]) => {
 	return (target: any, property: string) => {
-		const schema = GetClassMetadata<Record<string, FieldConstraint[]>>(SCHEMA_SYMBOL, target, {});
+		const schema = GetSchema(target);
 		if (!schema[property]) {
 			schema[property] = [];
 		}
 		Array.isArray(constraints) ? schema[property].push(...constraints) : schema[property].push(constraints);
-		SetClassMetadata(SCHEMA_SYMBOL, target, schema);
+		SetSchema(target, schema);
 	};
 };
 
@@ -53,12 +81,8 @@ export type ExtraRules<T> = {
 
 export const NestedConstraint = <T>(obj: ClassType<T> | [ClassType<T>], extraRules?: ExtraRules<T>) => {
 	return (target: any, property: string) => {
-		const schema = GetClassMetadata<Record<string, FieldConstraint[]>>(SCHEMA_SYMBOL, target, {});
-		const objectSchema = GetClassMetadata<Record<string, FieldConstraint[]>>(
-			SCHEMA_SYMBOL,
-			Array.isArray(obj) ? obj[0].prototype : obj.prototype,
-			{},
-		);
+		const schema = GetSchema(target);
+		const objectSchema = GetSchema(Array.isArray(obj) ? obj[0].prototype : obj.prototype);
 		const linker = Array.isArray(obj) ? ".*." : ".";
 		for (const [field, constraints] of Object.entries(objectSchema)) {
 			if (extraRules && (extraRules as any)[field]) {
@@ -66,7 +90,7 @@ export const NestedConstraint = <T>(obj: ClassType<T> | [ClassType<T>], extraRul
 			}
 			schema[`${property}${linker}${field}`] = constraints;
 		}
-		SetClassMetadata(SCHEMA_SYMBOL, target, schema);
+		SetSchema(target, schema);
 	};
 };
 
@@ -175,7 +199,7 @@ export const GetSchemaValidators = (objects: ClassType<any>[]) => {
 		for (const { chains, message } of oneofs) {
 			validators.push(oneOf(chains, message));
 		}
-		const schema = GetClassMetadata<Record<string, FieldConstraint[]>>(SCHEMA_SYMBOL, obj.prototype, {});
+		const schema = GetSchema(obj.prototype);
 		for (const [field, constraints] of Object.entries(schema)) {
 			constraints.forEach((constraint) => {
 				validators.push(ConstraintToValidator(field, constraint, location));
