@@ -29,6 +29,6 @@
     "lint-staged": "^10.1.0"
   },
   "peerDependencies": {
-    "handy-redis": "^1.8.0"
+    "handy-redis": "^1.8.3"
   }
 }
