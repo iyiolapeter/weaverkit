@@ -26,7 +26,7 @@
     "lint-staged": "^10.1.0"
   },
   "peerDependencies": {
-    "@types/validator": "^13.0.0",
-    "validator": "^13.0.0"
+    "@types/validator": "^13.1.0",
+    "validator": "^13.1.17"
   }
 }

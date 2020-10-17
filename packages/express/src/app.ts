@@ -37,7 +37,7 @@ export interface WeaverExpressAppConfig {
 	useErrorMiddleware?: boolean;
 	renderError?: RenderErrorInterceptor;
 	cors?: boolean | cors.CorsOptions;
-	helmet?: boolean | helmet.IHelmetConfiguration;
+	helmet?: boolean | Parameters<typeof helmet>[0];
 	bodyParser?: {
 		json?: boolean | bodyParser.OptionsJson;
 		urlencoded?: boolean | bodyParser.OptionsUrlencoded;

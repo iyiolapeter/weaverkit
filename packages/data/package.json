@@ -18,8 +18,8 @@
     "test": "echo \"Error: run tests from root\" && exit 1"
   },
   "dependencies": {
-    "@types/ejs": "^3.0.1",
-    "ejs": "^3.0.1"
+    "@types/ejs": "^3.0.4",
+    "ejs": "^3.1.5"
   },
   "devDependencies": {
     "husky": "^4.2.3",

@@ -25,11 +25,11 @@
     "@weaverkit/adapters.base": "^0.0.12"
   },
   "devDependencies": {
-    "@types/mongoose": "^5.7.8",
+    "@types/mongoose": "^5.7.36",
     "husky": "^4.2.3",
     "lint-staged": "^10.1.0"
   },
   "peerDependencies": {
-    "mongoose": "^5.9.7"
+    "mongoose": "^5.10.9"
   }
 }
