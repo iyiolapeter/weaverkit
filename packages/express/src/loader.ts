@@ -43,7 +43,11 @@ export function RouteLoader() {
 			}
 			const { path, router } = GetRouterFromController(ctor, config);
 			if (typeof path === "string") {
-				collection[path] = router;
+				if(collection[path]){
+					(collection[path] as Router).use(router); 
+				}else{
+					collection[path] = router;
+				}
 			} else {
 				console.warn(
 					`Controller ${ctor.name} has a non-simple basePath. Use a combination of getRouterFromController and app.use/router.use to mount`,
