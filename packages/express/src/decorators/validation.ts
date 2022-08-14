@@ -7,6 +7,8 @@ import {
 	ValidationChain,
 	oneOf,
 	OneOfCustomMessageBuilder,
+	Result,
+	ValidationError as ExpressValidationError,
 } from "express-validator";
 import { GetClassMetadata, SetClassMetadata } from "./metadata";
 import { ClassType } from "../interfaces";
@@ -79,7 +81,10 @@ export type ExtraRules<T> = {
 	[key in keyof T]?: FieldConstraint;
 };
 
-export const NestedConstraint = <T>(obj: ClassType<T> | [ClassType<T>], extraRules?: ExtraRules<T>) => {
+export const NestedConstraint = <T>(
+	obj: ClassType<T> | [ClassType<T>],
+	{ extraRules, $if }: { extraRules?: ExtraRules<T> } & ValidateIf = {},
+) => {
 	return (target: any, property: string) => {
 		const schema = GetSchema(target);
 		const objectSchema = GetSchema(Array.isArray(obj) ? obj[0].prototype : obj.prototype);
@@ -88,7 +93,12 @@ export const NestedConstraint = <T>(obj: ClassType<T> | [ClassType<T>], extraRul
 			if (extraRules && (extraRules as any)[field]) {
 				constraints.push((extraRules as any)[field]);
 			}
-			schema[`${property}${linker}${field}`] = constraints;
+			schema[`${property}${linker}${field}`] = constraints.map((constraint) => {
+				if ($if) {
+					constraint.$if = $if;
+				}
+				return constraint;
+			});
 		}
 		SetSchema(target, schema);
 	};
@@ -131,20 +141,7 @@ export const SetGlobalValidationOptions = (options: Partial<ExpressValidatorOpti
 
 export const CreateValidationMiddleware = (locations: Location[], options: ExpressValidatorOptions = {}) => {
 	return (req: Request, _res: Response, next: NextFunction) => {
-		const {
-			errorFormatter = DEFAULTS.validator.errorFormatter,
-			errorOptions = DEFAULTS.validator.errorOptions,
-			matchedDataOptions = DEFAULTS.validator.matchedDataOptions,
-		} = options;
-		const errors = validationResult(req).formatWith(errorFormatter);
-		if (!errors.isEmpty()) {
-			throw new ValidationError().setFields(errors.array(errorOptions));
-		}
-		const validated: Record<Location, any> = (req as any)[VALIDATED_REQUEST_SYMBOL] ?? {};
-		locations.forEach((location) => {
-			validated[location] = matchedData(req, { ...matchedDataOptions, locations: [location] });
-		});
-		(req as any)[VALIDATED_REQUEST_SYMBOL] = validated;
+		HandleValidationResult(req, validationResult(req), locations, options);
 		return next();
 	};
 };
@@ -248,7 +245,7 @@ export function UseValidator(
 }
 
 export const RunImperative = async (validator: ValidationChain | Middleware, req: Request, res?: Response) => {
-	return new Promise((resolve, reject) => {
+	return new Promise<void>((resolve, reject) => {
 		if ((validator as ValidationChain).run && typeof (validator as ValidationChain).run === "function") {
 			(validator as ValidationChain).run(req);
 			return resolve();
@@ -271,4 +268,39 @@ export const RunValidators = async (objects: ClassType<any>[], req: Request, res
 	const { validators } = GetSchemaValidators(objects);
 	await Promise.all(validators.map((validator) => RunImperative(validator, req, res)));
 	return validationResult(req);
+};
+
+export const HandleValidationResult = (
+	req: Request,
+	result: Result<ExpressValidationError>,
+	locations: Location[],
+	options: ExpressValidatorOptions,
+) => {
+	const {
+		errorFormatter = DEFAULTS.validator.errorFormatter,
+		errorOptions = DEFAULTS.validator.errorOptions,
+		matchedDataOptions = DEFAULTS.validator.matchedDataOptions,
+	} = options;
+	const errors = result.formatWith(errorFormatter);
+	if (!errors.isEmpty()) {
+		throw new ValidationError().setFields(errors.array(errorOptions));
+	}
+	const validated: Record<Location, any> = (req as any)[VALIDATED_REQUEST_SYMBOL] ?? {};
+	locations.forEach((location) => {
+		validated[location] = matchedData(req, { ...matchedDataOptions, locations: [location] });
+	});
+	(req as any)[VALIDATED_REQUEST_SYMBOL] = validated;
+};
+
+export interface RunValidationMiddlewareOptions {
+	objects: ClassType<any>[];
+	req: Request;
+	res?: Response;
+	validationOptions?: ExpressValidatorOptions;
+}
+
+export const RunValidationMiddleware = async ({ objects, req, res, validationOptions = {} }: RunValidationMiddlewareOptions) => {
+	const { validators, locations } = GetSchemaValidators(objects);
+	await Promise.all(validators.map((validator) => RunImperative(validator, req, res)));
+	return HandleValidationResult(req, validationResult(req), locations, validationOptions);
 };
