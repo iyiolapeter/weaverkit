@@ -245,23 +245,28 @@ export function UseValidator(
 }
 
 export const RunImperative = async (validator: ValidationChain | Middleware, req: Request, res?: Response) => {
-	return new Promise<void>((resolve, reject) => {
+	try {
 		if ((validator as ValidationChain).run && typeof (validator as ValidationChain).run === "function") {
-			(validator as ValidationChain).run(req);
-			return resolve();
+			await (validator as ValidationChain).run(req);
+			return;
 		}
 		if (typeof validator === "function") {
 			// could be oneOf, use as a middleware
-			const next = (error?: any) => {
-				if (error) {
-					return reject(error);
-				}
-				return resolve();
-			};
-			return validator(req, res, next);
+			await new Promise<void>((resolve, reject) => {
+				const next = (error?: any) => {
+					if (error) {
+						return reject(error);
+					}
+					return resolve();
+				};
+				return validator(req, res, next);
+			});
+			return;
 		}
-		return reject(new Error("Unable to run validator imperatively"));
-	});
+		throw new Error("Unable to run validator imperatively");
+	} catch (error) {
+		throw error;
+	}
 };
 
 export const RunValidators = async (objects: ClassType<any>[], req: Request, res?: Response) => {
