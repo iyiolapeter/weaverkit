@@ -7,10 +7,10 @@ export abstract class BaseStorageAdapter<T = any, C = any> {
 
 	public static ensure<T extends BaseStorageAdapter>(adapter?: T) {
 		if (adapter && adapter.connection !== undefined) {
-			return adapter.connection;
+			return adapter.connection as T["connection"];
 		}
 		if (this.defaultConnection) {
-			return this.defaultConnection as T;
+			return this.defaultConnection as T["connection"];
 		}
 		throw new Error("Please pass a connection instance to this method or initialize a default connection in storage adapter");
 	}
