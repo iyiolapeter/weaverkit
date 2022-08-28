@@ -1,6 +1,6 @@
 {
     "name": "@weaverkit/adapters.sequelize",
-    "version": "0.0.14-rc0",
+    "version": "0.1.0",
     "description": "> TODO: description",
     "author": "Peter Smart <iyiolapeter@gmail.com>",
     "homepage": "",
@@ -25,7 +25,7 @@
     },
     "gitHead": "302e89539960cb904d0f1e5a136859a453c5a435",
     "dependencies": {
-        "@weaverkit/adapters.base": "^0.0.14-rc0"
+        "@weaverkit/adapters.base": "^0.1.0"
     },
     "devDependencies": {
         "@types/validator": "^13.7.6",

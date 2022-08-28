@@ -1,6 +1,6 @@
 {
     "name": "@weaverkit/logger",
-    "version": "0.0.13",
+    "version": "0.1.0",
     "description": "> TODO: description",
     "author": "Peter Smart <iyiolapeter@gmail.com>",
     "homepage": "",
@@ -22,7 +22,7 @@
     },
     "dependencies": {
         "@types/cls-hooked": "^4.3.3",
-        "@weaverkit/utils": "^0.0.13",
+        "@weaverkit/utils": "^0.1.0",
         "cls-hooked": "^4.2.2",
         "winston": "^3.8.1",
         "winston-daily-rotate-file": "^4.7.1"
