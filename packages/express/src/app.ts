@@ -2,7 +2,6 @@ import { ErrorHandler, NotFoundError, AppError } from "@weaverkit/errors";
 import { EventEmitter } from "events";
 import { MountCollection } from "./helpers";
 import { RouteCollection } from "./interfaces";
-import bodyParser from "body-parser";
 import express from "express";
 import helmet from "helmet";
 import cors from "cors";
@@ -39,10 +38,10 @@ export interface WeaverExpressAppConfig {
 	cors?: boolean | cors.CorsOptions;
 	helmet?: boolean | Parameters<typeof helmet>[0];
 	bodyParser?: {
-		json?: boolean | bodyParser.OptionsJson;
-		urlencoded?: boolean | bodyParser.OptionsUrlencoded;
-		text?: boolean | bodyParser.OptionsText;
-		raw?: boolean | bodyParser.Options;
+		json?: boolean | Parameters<typeof express.json>[0];
+		urlencoded?: boolean | Parameters<typeof express.urlencoded>[0];
+		text?: boolean | Parameters<typeof express.text>[0];
+		raw?: boolean | Parameters<typeof express.raw>[0];
 	};
 }
 
@@ -72,16 +71,16 @@ export class WeaverExpressApp extends BaseExpressApp {
 		}
 		const { json = true, urlencoded = { extended: true }, text = false, raw = false } = this.config.bodyParser || {};
 		if (json !== false) {
-			this._app.use(bodyParser.json(this.extractOptions(json)));
+			this._app.use(express.json(this.extractOptions(json)));
 		}
 		if (urlencoded !== false) {
-			this._app.use(bodyParser.urlencoded(this.extractOptions(urlencoded)));
+			this._app.use(express.urlencoded(this.extractOptions(urlencoded)));
 		}
 		if (text !== false) {
-			this._app.use(bodyParser.raw(this.extractOptions(text)));
+			this._app.use(express.text(this.extractOptions(text)));
 		}
 		if (raw !== false) {
-			this._app.use(bodyParser.raw(this.extractOptions(raw)));
+			this._app.use(express.raw(this.extractOptions(raw)));
 		}
 	}
 
