@@ -1,13 +1,22 @@
 import { BaseStorageAdapter } from "@weaverkit/adapters.base";
-import { IHandyRedis, createHandyClient } from "handy-redis";
-import { ClientOpts } from "redis";
+import IORedis, { RedisOptions } from "ioredis";
 
-export class RedisStorageAdapter extends BaseStorageAdapter<IHandyRedis, ClientOpts> {
+interface WithPrefix {
+	prefix?: string;
+}
+
+interface WithUrl {
+	url?: string;
+}
+export class RedisStorageAdapter extends BaseStorageAdapter<IORedis, RedisOptions & WithUrl & WithPrefix> {
 	public defaultConfig() {
 		return {};
 	}
 
-	public createConnection(options: ClientOpts) {
-		return createHandyClient(options);
+	public createConnection(options: RedisOptions & WithUrl & WithPrefix) {
+		const { url, prefix, ...rest } = options;
+		const opts: RedisOptions = prefix ? { keyPrefix: prefix, ...rest } : rest;
+		const redis = url ? new IORedis(url, opts) : new IORedis(opts);
+		return redis;
 	}
 }

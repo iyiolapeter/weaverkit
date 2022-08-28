@@ -59,20 +59,17 @@ export class RedisHash<T = Record<string, any>> extends Map<keyof T, any> {
 		return RedisStorageAdapter.ensure(adapter).del(key);
 	}
 
-	public static find<T = Record<string, any>>(options: RedisHashFindOptions) {
+	public static async find<T = Record<string, any>>(options: RedisHashFindOptions) {
 		const { key, adapter } = options;
-		return RedisStorageAdapter.ensure(adapter)
-			.hgetall(key)
-			.then((hash: Record<string, string>) => {
-				if (!hash) {
-					return null;
-				}
-				const unwrapped = Object.entries(hash).map((entry) => {
-					entry[1] = unserialize(entry[1]);
-					return entry;
-				});
-				return new RedisHash<T>(key, unwrapped as any);
-			});
+		const hash = await RedisStorageAdapter.ensure(adapter).hgetall(key);
+		if (!hash) {
+			return null;
+		}
+		const unwrapped = Object.entries(hash).map((entry) => {
+			entry[1] = unserialize(entry[1] as any);
+			return entry;
+		});
+		return new RedisHash<T>(key, unwrapped as any);
 	}
 
 	public static async save(key: string, data: RedisHash | Record<string, any>, options: RedisHashSaveOptions = {}) {
@@ -82,7 +79,7 @@ export class RedisHash<T = Record<string, any>> extends Map<keyof T, any> {
 			entry[1] = serialize(entry[1]);
 			return entry as HashEntry;
 		});
-		const saved = await connection.hmset(key, ...entries);
+		const saved = await connection.hmset(key, Object.fromEntries(entries));
 		if (saved && expire) {
 			await connection.expire(key, expire);
 		}
@@ -112,10 +109,7 @@ export class RedisHash<T = Record<string, any>> extends Map<keyof T, any> {
 	}
 
 	public toObject() {
-		return [...this].reduce((obj: any, entry) => {
-			obj[entry[0]] = entry[1];
-			return obj;
-		}, {});
+		return Object.fromEntries(this) as T;
 	}
 }
 
@@ -125,9 +119,11 @@ export interface HasPrefix {
 
 export interface KeyValGetOptions extends HasAdapter, HasKey, Partial<HasPrefix> {}
 
+export type TTL = ["EX" | "PX" | "EXAT" | "PXAT", number] | "KEEPTTL";
+
 export interface KeyValSetOptions extends HasAdapter, HasKey, Partial<HasPrefix> {
 	value: string | any[] | Record<string, any>;
-	ttl?: ["EX" | "PX", number] | null;
+	ttl?: TTL;
 	condition?: "NX" | "XX";
 }
 
@@ -153,11 +149,11 @@ export class KeyVal {
 			const accessor = makeKey(key, prefix);
 			const val = serialize(value);
 			if (ttl && condition) {
-				set = await connection.set(accessor, val, ttl as any, condition);
+				set = await connection.set(accessor, val, ...(typeof ttl === "string" ? ([ttl] as any) : ttl), condition);
 			} else if (ttl) {
 				set = await connection.set(accessor, val, ttl as any);
 			} else if (condition) {
-				set = await connection.set(accessor, val, condition);
+				set = await connection.set(accessor, val, condition as any);
 			} else {
 				set = await connection.set(accessor, val);
 			}

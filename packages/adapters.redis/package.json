@@ -1,6 +1,6 @@
 {
     "name": "@weaverkit/adapters.redis",
-    "version": "0.0.14-rc1",
+    "version": "0.0.14-rc3",
     "description": "> TODO: description",
     "author": "Peter Smart <iyiolapeter@gmail.com>",
     "homepage": "",
@@ -13,6 +13,9 @@
     "files": [
         "lib"
     ],
+    "engines": {
+        "node": ">=12"
+    },
     "scripts": {
         "build": "tsc",
         "test": "echo \"Error: run tests from root\" && exit 1"
@@ -25,11 +28,9 @@
         "@weaverkit/adapters.base": "^0.0.14-rc0"
     },
     "devDependencies": {
-        "husky": "^4.2.3",
-        "lint-staged": "^10.1.0",
-        "typescript": "^4.7.4"
+        "typescript": "4.7.2"
     },
     "peerDependencies": {
-        "handy-redis": "^1.8.3"
+        "ioredis": "^5.2.3"
     }
 }
