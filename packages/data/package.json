@@ -1,32 +1,34 @@
 {
-  "name": "@weaverkit/data",
-  "version": "0.0.13",
-  "description": "Collection of utility classes for any express powered rest api and others",
-  "author": "Peter Smart <iyiolapeter@gmail.com>",
-  "homepage": "",
-  "license": "MIT",
-  "main": "lib/index.js",
-  "directories": {
-    "lib": "lib",
-    "test": "__tests__"
-  },
-  "files": [
-    "lib"
-  ],
-  "scripts": {
-    "build": "tsc",
-    "test": "echo \"Error: run tests from root\" && exit 1"
-  },
-  "dependencies": {
-    "@types/ejs": "^3.0.4",
-    "ejs": "^3.1.5"
-  },
-  "devDependencies": {
-    "husky": "^4.2.3",
-    "lint-staged": "^10.1.0"
-  },
-  "publishConfig": {
-    "access": "public"
-  },
-  "gitHead": "302e89539960cb904d0f1e5a136859a453c5a435"
+    "name": "@weaverkit/data",
+    "version": "0.0.13",
+    "description": "Collection of utility classes for any express powered rest api and others",
+    "author": "Peter Smart <iyiolapeter@gmail.com>",
+    "homepage": "",
+    "license": "MIT",
+    "main": "lib/index.js",
+    "directories": {
+        "lib": "lib",
+        "test": "__tests__"
+    },
+    "files": [
+        "lib"
+    ],
+    "engines": {
+        "node": ">=12"
+    },
+    "scripts": {
+        "build": "tsc",
+        "test": "echo \"Error: run tests from root\" && exit 1"
+    },
+    "dependencies": {
+        "@types/ejs": "^3.1.1",
+        "ejs": "^3.1.8"
+    },
+    "devDependencies": {
+        "typescript": "4.7.2"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "gitHead": "302e89539960cb904d0f1e5a136859a453c5a435"
 }
