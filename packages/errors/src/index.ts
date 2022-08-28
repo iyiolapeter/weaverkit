@@ -14,7 +14,7 @@ export abstract class AppError extends Error {
 
 	public inner!: Error;
 
-	protected context!: any;
+	protected context!: Record<string, any>;
 
 	constructor(message?: any) {
 		super(message);
@@ -38,8 +38,8 @@ export abstract class AppError extends Error {
 		return this;
 	}
 
-	public setContext(context: any) {
-		this.context = context;
+	public setContext(context: Record<string, any>, append = false) {
+		this.context = append ? { ...this.context, ...context } : context;
 		return this;
 	}
 
