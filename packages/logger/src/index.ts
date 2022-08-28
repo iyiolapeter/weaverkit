@@ -6,7 +6,7 @@ import LogRotator from "winston-daily-rotate-file";
 import * as Transport from "winston-transport";
 
 export const NAMESPACE = "log";
-const logNamespace = createNamespace(NAMESPACE);
+const namespace = createNamespace(NAMESPACE);
 
 export const getLogNamespace = () => {
 	return getNamespace(NAMESPACE);
@@ -21,22 +21,53 @@ export const LogContextId = format((info) => {
 	const namespace = getNamespace(NAMESPACE);
 	if (namespace) {
 		const contextId = namespace.get("ContextId");
+		const context = namespace.get("context");
 		if (contextId) {
 			info.ContextId = contextId;
+		}
+		if (context) {
+			info.$context = Object.fromEntries(context);
 		}
 	}
 	return info;
 });
 
 export const createContextId = (cb: (error: Error | null, contextId: string | false) => any) => {
-	if (!logNamespace) {
+	if (!namespace) {
 		return cb(null, false);
 	}
 	const contextId = getUniqueReference();
-	logNamespace.run(() => {
-		logNamespace.set("ContextId", contextId);
+	namespace.run(() => {
+		namespace.set("ContextId", contextId);
 		cb(null, contextId);
 	});
+};
+
+export const Context = {
+	create: (cb: (error: Error | null, context: Map<string, any> | false) => any) => {
+		if (!namespace) {
+			return cb(null, false);
+		}
+		const context = new Map<string, any>();
+		namespace.run(() => {
+			namespace.set("context", context);
+			cb(null, context);
+		});
+	},
+	get: () => {
+		const context = namespace.get("context");
+		if (context) {
+			return context as Map<string, any>;
+		}
+		return undefined;
+	},
+	set: (key: string, value: string) => {
+		const context = Context.get();
+		if (!context) {
+			return false;
+		}
+		return context.set(key, value);
+	},
 };
 
 const TRANSPORTS: Record<string, Transport> = {
