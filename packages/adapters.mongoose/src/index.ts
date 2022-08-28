@@ -1,4 +1,4 @@
-import mongoose, { Connection, SchemaOptions, ConnectionOptions } from "mongoose";
+import mongoose, { Connection, SchemaOptions, ConnectOptions } from "mongoose";
 import { BaseStorageAdapter } from "@weaverkit/adapters.base";
 
 export const DEFAULT_SCHEMA_OPTIONS: SchemaOptions = {
@@ -9,17 +9,12 @@ interface MongoURI {
 	uri: string;
 }
 
-export class MongooseStorageAdapter extends BaseStorageAdapter<Connection, ConnectionOptions & MongoURI> {
+export class MongooseStorageAdapter extends BaseStorageAdapter<Connection, ConnectOptions & MongoURI> {
 	public defaultConfig() {
-		return {
-			useNewUrlParser: true,
-			useCreateIndex: true,
-			useFindAndModify: false,
-			useUnifiedTopology: true,
-		};
+		return {};
 	}
 
-	public createConnection(options: ConnectionOptions & MongoURI) {
+	public createConnection(options: ConnectOptions & MongoURI) {
 		const { uri, ...rest } = options;
 		return mongoose.createConnection(uri, rest);
 	}

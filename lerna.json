@@ -2,5 +2,10 @@
   "packages": [
     "packages/*"
   ],
-  "version": "0.0.12"
+  "command": {
+    "publish": {
+      "graphType": "all"
+    }
+  },
+  "version": "0.0.13"
 }

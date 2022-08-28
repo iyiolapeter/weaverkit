@@ -1,15 +1,15 @@
 import { Router } from "express";
 import { CreateRouter, IsRouter } from "./helpers";
-import { RouterDefinition, IncomingRouter, Route, RouteCollection, ClassType } from "./interfaces";
+import { RouterDefinition, IncomingRouter, Route, RouteCollection, ClassType, SubRouter } from "./interfaces";
 import { DecoratedRouterConfig, GetRouterFromController } from "./decorators";
 
 export function RouteLoader() {
 	function fromDefinition(definition: RouterDefinition, options: IncomingRouter = {}) {
 		const router = options.router || CreateRouter();
 		for (const [method, routes] of Object.entries(definition)) {
-			for (const route of routes as Required<Route[]>) {
+			for (const route of routes as Required<(Route | SubRouter)[]>) {
 				if (method === "use") {
-					router.use(route[0], (route[1] as unknown) as Router);
+					router.use(route[0], route[1]);
 				} else {
 					const [path, ...handlers] = route as Route;
 					(router as any)[method](path, handlers);

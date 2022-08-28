@@ -55,17 +55,19 @@ const ResolveContext = (req: Request, resolver?: (req: Request) => any) => {
 	return (req as any).context || {};
 };
 
-export const SendResponse = (res: Response, result: any) => {
+export const SendResponse = async (res: Response, result: any, defaultStatusCode = 200) => {
 	if (result instanceof Sendable) {
 		if (result instanceof Redirection) {
 			return res.redirect(result.httpCode, result.location);
 		}
 		result.emitter.emit("beforesend");
-		res.status(result.httpCode).send(result.send());
-		return result.emitter.emit("aftersend");
+		const body = await result.send();
+		res.status(result.httpCode).send(body);
+		result.emitter.emit("aftersend");
 	} else {
-		res.status(200).send(result);
+		res.status(defaultStatusCode).send(result);
 	}
+	return true;
 };
 
 export const ValidatedRequestHandler = (action: (data: any, context?: any) => any, options: ValidatedRequestHandlerOptions = {}) => {
