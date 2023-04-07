@@ -62,7 +62,7 @@ export class RedisHash<T = Record<string, any>> extends Map<keyof T, any> {
 	public static async find<T = Record<string, any>>(options: RedisHashFindOptions) {
 		const { key, adapter } = options;
 		const hash = await RedisStorageAdapter.ensure(adapter).hgetall(key);
-		if (!hash) {
+		if (!hash || !Object.keys(hash).length) {
 			return null;
 		}
 		const unwrapped = Object.entries(hash).map((entry) => {
