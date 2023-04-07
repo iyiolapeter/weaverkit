@@ -14,7 +14,7 @@ export const ExtractArg = (obj: any, key?: any) => {
 
 export type ArgResolver = (req: Request, key?: string | symbol) => any;
 
-const PreferValidated = (req: Request, location: Location) => {
+export const PreferValidated = (req: Request, location: Location) => {
 	const validated = (req as any)[VALIDATED_REQUEST_SYMBOL];
 	if (validated && validated[location] !== undefined) {
 		return validated[location];

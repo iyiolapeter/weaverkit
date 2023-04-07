@@ -2,7 +2,7 @@ import { ErrorFormatter, MatchedDataOptions, matchedData, validationResult } fro
 import { Request, Response, RouterOptions, Router, NextFunction } from "express";
 import { ValidationError, ServerError } from "@weaverkit/errors";
 import { Sendable, Redirection } from "@weaverkit/data";
-import { CanUse, RouteCollection } from "./interfaces";
+import { CanUse, MiddlewareSignature, NextMiddlewareSignature, RouteCollection } from "./interfaces";
 import { BaseExpressApp } from "./app";
 
 export interface ExpressValidatorOptions {
@@ -94,4 +94,20 @@ export const MountCollection = (app: CanUse, collection: RouteCollection) => {
 		}
 		app.use(NormalizeRoutePath(route), handler);
 	}
+};
+
+export const RunMiddlewareIf = (
+	condition: (req: Request) => boolean | Promise<boolean>,
+	middleware: MiddlewareSignature | NextMiddlewareSignature,
+) => {
+	return async (req: Request, res: Response, next: NextFunction) => {
+		try {
+			if (await condition(req)) {
+				return middleware(req, res, next);
+			}
+			return next();
+		} catch (error) {
+			next(error);
+		}
+	};
 };
