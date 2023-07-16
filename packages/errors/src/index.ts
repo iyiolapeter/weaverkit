@@ -1,10 +1,13 @@
 import { EventEmitter } from "events";
+import { OutgoingHttpHeaders } from "http";
 
 export abstract class AppError extends Error {
 	public static LOGGABLE_DEFAULT = true;
 	public static REPORTABLE_DEFAULT = true;
 	public abstract httpCode: number;
 	public abstract code: string | number;
+
+	#httpHeaders?: OutgoingHttpHeaders;
 
 	public message!: string;
 
@@ -31,6 +34,15 @@ export abstract class AppError extends Error {
 	public setCode(code: string | number) {
 		this.code = code;
 		return this;
+	}
+
+	public setHttpHeaders(headers: Record<string, any>, append = false) {
+		this.#httpHeaders = append ? { ...this.#httpHeaders, ...headers } : headers;
+		return this;
+	}
+
+	public get httpHeaders() {
+		return this.#httpHeaders;
 	}
 
 	public setInfo(info: any) {
@@ -139,6 +151,24 @@ export class UnprocessibleEntityError extends AppError {
 	}
 }
 
+export class FailedDependencyError extends AppError {
+	public httpCode = 424;
+	public code = "FAILED_DEPENDENCY_ERROR";
+
+	constructor(public message = "Failed Dependency.") {
+		super(message);
+	}
+}
+
+export class TooManyRequestsError extends AppError {
+	public httpCode = 429;
+	public code = "TOO_MANY_REQUESTS_ERROR";
+
+	constructor(public message = "Too many requests.") {
+		super(message);
+	}
+}
+
 export class ValidationError extends UnprocessibleEntityError {
 	public code = "INPUT_VALIDATION_ERROR";
 	public fields!: any;
@@ -178,6 +208,15 @@ export class ServerError extends AppError {
 	public code = "SERVER_ERROR";
 
 	constructor(public message = "Server Error.") {
+		super(message);
+	}
+}
+
+export class NotImplementedError extends AppError {
+	public httpCode = 501;
+	public code = "NOT_IMPLEMENTED_ERROR";
+
+	constructor(public message = "Not Implemented.") {
 		super(message);
 	}
 }

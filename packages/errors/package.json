@@ -10,6 +10,11 @@
         "lib": "lib",
         "test": "__tests__"
     },
+    "scripts": {
+        "build": "tsc",
+        "build:watch": "tsc --watch",
+        "test": "echo \"Error: run tests from root\" && exit 1"
+    },
     "files": [
         "lib"
     ],

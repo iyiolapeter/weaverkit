@@ -1,6 +1,6 @@
 import { ErrorHandler, NotFoundError, AppError } from "@weaverkit/errors";
 import { EventEmitter } from "events";
-import { MountCollection } from "./helpers";
+import { ApplyHeaders, MountCollection } from "./helpers";
 import { RouteCollection } from "./interfaces";
 import express from "express";
 import helmet from "helmet";
@@ -125,6 +125,9 @@ export class WeaverExpressApp extends BaseExpressApp {
 				if (rendered) {
 					return;
 				}
+			}
+			if (error.httpHeaders) {
+				ApplyHeaders(res, error.httpHeaders);
 			}
 			return res.status(error.httpCode).send(format);
 		});

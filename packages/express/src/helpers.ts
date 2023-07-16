@@ -4,6 +4,7 @@ import { ValidationError, ServerError } from "@weaverkit/errors";
 import { Sendable, Redirection } from "@weaverkit/data";
 import { CanUse, MiddlewareSignature, NextMiddlewareSignature, RouteCollection } from "./interfaces";
 import { BaseExpressApp } from "./app";
+import { OutgoingHttpHeaders } from "http";
 
 export interface ExpressValidatorOptions {
 	matchedDataOptions?: Partial<MatchedDataOptions>;
@@ -57,6 +58,9 @@ const ResolveContext = (req: Request, resolver?: (req: Request) => any) => {
 
 export const SendResponse = async (res: Response, result: any, defaultStatusCode = 200) => {
 	if (result instanceof Sendable) {
+		if (result.httpHeaders) {
+			ApplyHeaders(res, result.httpHeaders);
+		}
 		if (result instanceof Redirection) {
 			return res.redirect(result.httpCode, result.location);
 		}
@@ -68,6 +72,14 @@ export const SendResponse = async (res: Response, result: any, defaultStatusCode
 		res.status(defaultStatusCode).send(result);
 	}
 	return true;
+};
+
+export const ApplyHeaders = (res: Response, headers: OutgoingHttpHeaders) => {
+	for (const [name, value] of Object.entries(headers)) {
+		if (value) {
+			res.setHeader(name, value);
+		}
+	}
 };
 
 export const ValidatedRequestHandler = (action: (data: any, context?: any) => any, options: ValidatedRequestHandlerOptions = {}) => {
