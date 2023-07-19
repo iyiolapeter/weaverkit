@@ -1,6 +1,6 @@
 {
     "name": "@weaverkit/adapters.mongoose",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "> TODO: description",
     "author": "Peter Smart <iyiolapeter@gmail.com>",
     "homepage": "",
@@ -25,7 +25,7 @@
     },
     "gitHead": "302e89539960cb904d0f1e5a136859a453c5a435",
     "dependencies": {
-        "@weaverkit/adapters.base": "^0.1.1"
+        "@weaverkit/adapters.base": "^0.1.2"
     },
     "devDependencies": {
         "typescript": "4.7.2"

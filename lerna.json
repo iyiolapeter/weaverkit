@@ -4,8 +4,9 @@
   ],
   "command": {
     "publish": {
-      "graphType": "all"
+      "graphType": "all",
+      "forcePublish": true
     }
   },
-  "version": "0.1.2-rc.0"
+  "version": "0.1.2"
 }
