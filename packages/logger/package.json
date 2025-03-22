@@ -14,17 +14,17 @@
         "lib"
     ],
     "engines": {
-        "node": ">=16"
+        "node": ">=20"
     },
     "scripts": {
         "build": "tsc",
         "test": "echo \"Error: run tests from root\" && exit 1"
     },
     "dependencies": {
-        "@types/cls-hooked": "^4.3.8",
+        "@types/cls-hooked": "^4.3.9",
         "@weaverkit/utils": "^0.2.0-aplha.1",
         "cls-hooked": "^4.2.2",
-        "winston": "^3.13.0",
+        "winston": "^3.17.0",
         "winston-daily-rotate-file": "^5.0.0"
     },
     "devDependencies": {
@@ -33,5 +33,5 @@
     "publishConfig": {
         "access": "public"
     },
-    "gitHead": "465069659917ef6819edec6c4eb33370280f9d6f"
+    "gitHead": "c46f2f5b5c47833e3a02fb999557fd93716dad3f"
 }

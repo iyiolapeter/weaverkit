@@ -19,12 +19,12 @@
         "lib"
     ],
     "engines": {
-        "node": ">=16"
+        "node": ">=20"
     },
     "publishConfig": {
         "access": "public"
     },
-    "gitHead": "465069659917ef6819edec6c4eb33370280f9d6f",
+    "gitHead": "c46f2f5b5c47833e3a02fb999557fd93716dad3f",
     "devDependencies": {
         "typescript": "4.9.5"
     }

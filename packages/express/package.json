@@ -14,7 +14,7 @@
         "lib"
     ],
     "engines": {
-        "node": ">=16"
+        "node": ">=20"
     },
     "scripts": {
         "start": "ts-node server/index.ts",
@@ -25,23 +25,23 @@
     "dependencies": {
         "@types/cors": "^2.8.17",
         "cors": "^2.8.5",
-        "helmet": "^7.1.0"
+        "helmet": "^8.1.0"
     },
     "devDependencies": {
         "@types/express": "^4.17.21",
         "@weaverkit/data": "^0.2.0-aplha.1",
         "@weaverkit/errors": "^0.2.0-aplha.1",
-        "express": "^4.19.2",
-        "express-validator": "^7.1.0",
-        "reflect-metadata": "^0.1.14",
+        "express": "^4.21.2",
+        "express-validator": "^7.2.1",
+        "reflect-metadata": "^0.2.2",
         "typescript": "4.9.5"
     },
     "peerDependencies": {
         "@types/express": "^4.17.21",
-        "@weaverkit/data": "^0.1.2",
-        "@weaverkit/errors": "^0.1.2",
-        "express": "^4.19.2",
-        "express-validator": "^7.1.0",
+        "@weaverkit/data": "^0.2.0-aplha.1",
+        "@weaverkit/errors": "^0.2.0-aplha.1",
+        "express": "^4.21.2",
+        "express-validator": "^7.2.1",
         "reflect-metadata": "^0.1.14"
     },
     "nodemonConfig": {
@@ -61,5 +61,5 @@
     "publishConfig": {
         "access": "public"
     },
-    "gitHead": "465069659917ef6819edec6c4eb33370280f9d6f"
+    "gitHead": "c46f2f5b5c47833e3a02fb999557fd93716dad3f"
 }

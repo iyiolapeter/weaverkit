@@ -17,7 +17,7 @@ import { Use } from "./middleware";
 import { Request, Response, NextFunction } from "express";
 import { ValidationError } from "@weaverkit/errors";
 // import { Middleware } from "express-validator/src/base";
-import { ExpressValidatorOptions } from "../helpers";
+import { ExpressValidatorOptions, DefaultValidationErrorFormatter } from "../helpers";
 
 export interface ValidateIf {
 	$if?: ValidationChain | CustomValidator;
@@ -125,12 +125,7 @@ interface DefaultsShape {
 
 const DEFAULTS: DefaultsShape = {
 	validator: {
-		errorFormatter: ({ msg, param }: any) => {
-			return {
-				parameter: param,
-				message: msg,
-			};
-		},
+		errorFormatter: DefaultValidationErrorFormatter,
 		errorOptions: { onlyFirstError: true },
 		matchedDataOptions: { onlyValidData: true, includeOptionals: true },
 	},
@@ -169,6 +164,7 @@ export const ConstraintToValidator = (field: string, { $if, ...constraint }: Fie
 					req,
 					location,
 					path: field,
+					pathValues: [req[location][field]],
 				}));
 			} else {
 				throw new Error(`$if predicate passed for ${field} is not a function`);

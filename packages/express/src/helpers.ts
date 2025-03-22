@@ -29,15 +29,22 @@ export const CreateRouter = (options?: RouterOptions) => {
 	return Router(options);
 };
 
-export const ValidateRequest = (req: Request, options: ExpressValidatorOptions = {}) => {
-	const defaultErrorFormatter = ({ msg, param }: any) => {
+export const DefaultValidationErrorFormatter: ErrorFormatter<any> = (error) => {
+	if (error.type === "field") {
+		const { path, msg } = error;
 		return {
-			parameter: param,
+			parameter: path,
 			message: msg,
 		};
+	}
+	return {
+		message: error.msg,
 	};
+};
+
+export const ValidateRequest = (req: Request, options: ExpressValidatorOptions = {}) => {
 	const {
-		errorFormatter = defaultErrorFormatter,
+		errorFormatter = DefaultValidationErrorFormatter,
 		errorOptions = { onlyFirstError: true },
 		matchedDataOptions = { onlyValidData: true, includeOptionals: true },
 	} = options;
