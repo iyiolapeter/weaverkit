@@ -1,65 +1,65 @@
 {
-    "name": "@weaverkit/express",
-    "version": "0.2.0-aplha.1",
-    "description": "> TODO: description",
-    "author": "Peter Smart <iyiolapeter@gmail.com>",
-    "homepage": "",
-    "license": "MIT",
-    "main": "lib/index.js",
-    "directories": {
-        "lib": "lib",
-        "test": "__tests__"
-    },
-    "files": [
-        "lib"
-    ],
-    "engines": {
-        "node": ">=20"
-    },
-    "scripts": {
-        "start": "ts-node server/index.ts",
-        "build": "tsc",
-        "build:watch": "tsc --watch",
-        "test": "echo \"Error: run tests from root\" && exit 1"
-    },
-    "dependencies": {
-        "@types/cors": "^2.8.17",
-        "cors": "^2.8.5",
-        "helmet": "^8.1.0"
-    },
-    "devDependencies": {
-        "@types/express": "^4.17.21",
-        "@weaverkit/data": "^0.2.0-aplha.1",
-        "@weaverkit/errors": "^0.2.0-aplha.1",
-        "express": "^4.21.2",
-        "express-validator": "^7.2.1",
-        "reflect-metadata": "^0.2.2",
-        "typescript": "4.9.5"
-    },
-    "peerDependencies": {
-        "@types/express": "^4.17.21",
-        "@weaverkit/data": "^0.2.0-aplha.1",
-        "@weaverkit/errors": "^0.2.0-aplha.1",
-        "express": "^4.21.2",
-        "express-validator": "^7.2.1",
-        "reflect-metadata": "^0.1.14"
-    },
-    "nodemonConfig": {
-        "ignore": [
-            "**/*.test.ts",
-            "**/*.spec.ts",
-            ".git",
-            "node_modules"
-        ],
-        "watch": [
-            "src",
-            "server/index.ts"
-        ],
-        "exec": "npm start",
-        "ext": "ts"
-    },
-    "publishConfig": {
-        "access": "public"
-    },
-    "gitHead": "c46f2f5b5c47833e3a02fb999557fd93716dad3f"
+	"name": "@weaverkit/express",
+	"version": "0.2.0",
+	"description": "> TODO: description",
+	"author": "Peter Smart <iyiolapeter@gmail.com>",
+	"homepage": "",
+	"license": "MIT",
+	"main": "lib/index.js",
+	"directories": {
+		"lib": "lib",
+		"test": "__tests__"
+	},
+	"files": [
+		"lib"
+	],
+	"engines": {
+		"node": ">=20"
+	},
+	"scripts": {
+		"start": "ts-node server/index.ts",
+		"build": "tsc",
+		"build:watch": "tsc --watch",
+		"test": "echo \"Error: run tests from root\" && exit 1"
+	},
+	"dependencies": {
+		"@types/cors": "^2.8.17",
+		"cors": "^2.8.5",
+		"helmet": "^8.1.0"
+	},
+	"devDependencies": {
+		"@types/express": "^4.17.21",
+		"@weaverkit/data": "^0.2.0",
+		"@weaverkit/errors": "^0.2.0",
+		"express": "^4.21.2",
+		"express-validator": "^7.2.1",
+		"reflect-metadata": "^0.2.2",
+		"typescript": "4.9.5"
+	},
+	"peerDependencies": {
+		"@types/express": "^4.17.21",
+		"@weaverkit/data": "^0.2.0-aplha.1",
+		"@weaverkit/errors": "^0.2.0-aplha.1",
+		"express": "^4.21.2",
+		"express-validator": "^7.2.1",
+		"reflect-metadata": "^0.1.14"
+	},
+	"nodemonConfig": {
+		"ignore": [
+			"**/*.test.ts",
+			"**/*.spec.ts",
+			".git",
+			"node_modules"
+		],
+		"watch": [
+			"src",
+			"server/index.ts"
+		],
+		"exec": "npm start",
+		"ext": "ts"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"gitHead": "c46f2f5b5c47833e3a02fb999557fd93716dad3f"
 }

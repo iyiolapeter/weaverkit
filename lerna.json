@@ -1,19 +1,14 @@
 {
-  "packages": [
-    "packages/*"
-  ],
-  "command": {
-    "publish": {
-      "graphType": "all",
-      "forcePublish": true
-    },
-    "bootstrap": {
-      "hoist": [
-        "reflect-metadata",
-        "@types/node"
-      ],
-      "ignoreScripts": true
-    }
-  },
-  "version": "0.2.0-aplha.1"
+	"packages": ["packages/*"],
+	"command": {
+		"publish": {
+			"graphType": "all",
+			"forcePublish": true
+		},
+		"bootstrap": {
+			"hoist": ["reflect-metadata", "@types/node"],
+			"ignoreScripts": true
+		}
+	},
+	"version": "0.2.0"
 }
