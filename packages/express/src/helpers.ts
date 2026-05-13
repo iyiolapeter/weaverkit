@@ -83,7 +83,7 @@ export const SendResponse = async (res: Response, result: any, defaultStatusCode
 
 export const ApplyHeaders = (res: Response, headers: OutgoingHttpHeaders) => {
 	for (const [name, value] of Object.entries(headers)) {
-		if (value) {
+		if (value !== undefined && value !== null) {
 			res.setHeader(name, value);
 		}
 	}
@@ -94,7 +94,7 @@ export const ValidatedRequestHandler = (action: (data: any, context?: any) => an
 	return async (req: Request, res: Response, next: NextFunction) => {
 		try {
 			const data = await action(ValidateRequest(req, validatorOptions), ResolveContext(req, resolver));
-			SendResponse(res, data);
+			await SendResponse(res, data);
 		} catch (error) {
 			next(error);
 		}

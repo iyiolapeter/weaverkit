@@ -99,7 +99,7 @@ export const RequestHandlerFactory = (action: (...args: any[]) => any, resolvers
 			const args = await ResolveArgs(resolvers, { req, res, next });
 			const data = await action(...args);
 			if (handleResponse) {
-				SendResponse(res, data);
+				await SendResponse(res, data);
 			}
 			if (!shouldNext) {
 				return;

@@ -1,6 +1,15 @@
 import { EventEmitter } from "events";
 import { OutgoingHttpHeaders } from "http";
 
+export interface SerializedAppError {
+	httpCode: number;
+	code: string | number;
+	message: string;
+	info?: any;
+	fields?: any;
+	serviceName?: string;
+}
+
 export abstract class AppError extends Error {
 	public static LOGGABLE_DEFAULT = true;
 	public static REPORTABLE_DEFAULT = true;
@@ -82,6 +91,63 @@ export abstract class AppError extends Error {
 			props[value] = (this as any)[value];
 			return props;
 		}, {});
+	}
+
+	// --- RPC Serialization ---
+
+	private static _errorRegistry: Record<number, new (...args: any[]) => AppError> = {};
+
+	public static registerErrorClass(httpCode: number, ctor: new (...args: any[]) => AppError) {
+		this._errorRegistry[httpCode] = ctor;
+	}
+
+	public static deserialize(data: SerializedAppError): AppError {
+		let ErrorClass = this._errorRegistry[data.httpCode];
+
+		// Special case: 422 with fields → ValidationError
+		if (data.httpCode === 422 && data.fields) {
+			ErrorClass = ValidationError;
+		}
+
+		let error: AppError;
+		if (ErrorClass) {
+			error = new ErrorClass(data.message);
+		} else {
+			error = new HttpError(data.httpCode, data.message);
+		}
+
+		if (data.code !== undefined) {
+			error.setCode(data.code);
+		}
+		if (data.info !== undefined) {
+			error.setInfo(data.info);
+		}
+		if (data.fields && "setFields" in error) {
+			(error as ValidationError).setFields(data.fields);
+		}
+		if (data.serviceName && "setServiceName" in error) {
+			(error as ServiceUnavailableError).setServiceName(data.serviceName);
+		}
+
+		return error;
+	}
+
+	public serialize(): SerializedAppError {
+		const result: SerializedAppError = {
+			httpCode: this.httpCode,
+			code: this.code,
+			message: this.message,
+		};
+		if (this.info !== undefined) {
+			result.info = this.info;
+		}
+		if ("fields" in this && (this as any).fields !== undefined) {
+			result.fields = (this as any).fields;
+		}
+		if ("serviceName" in this && (this as any).serviceName !== undefined) {
+			result.serviceName = (this as any).serviceName;
+		}
+		return result;
 	}
 }
 
@@ -230,6 +296,19 @@ export class HttpError extends AppError {
 		super(message);
 	}
 }
+
+// Populate default error registry
+AppError.registerErrorClass(400, BadRequestError);
+AppError.registerErrorClass(401, UnauthorizedError);
+AppError.registerErrorClass(403, ForbiddenError);
+AppError.registerErrorClass(404, NotFoundError);
+AppError.registerErrorClass(409, ConflictError);
+AppError.registerErrorClass(422, UnprocessibleEntityError);
+AppError.registerErrorClass(424, FailedDependencyError);
+AppError.registerErrorClass(429, TooManyRequestsError);
+AppError.registerErrorClass(500, ServerError);
+AppError.registerErrorClass(501, NotImplementedError);
+AppError.registerErrorClass(503, ServiceUnavailableError);
 
 export interface ErrorHandlerFormat {
 	envelope?: boolean;

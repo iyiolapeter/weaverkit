@@ -36,7 +36,7 @@ const MergeSchema = (first: Record<string, FieldConstraint[]>, second: Record<st
 	const merged = Object.assign({}, first);
 	for (const [key, constraints] of Object.entries(second)) {
 		if (merged[key]) {
-			merged[key].concat(constraints);
+			merged[key] = merged[key].concat(constraints);
 			continue;
 		}
 		merged[key] = constraints;

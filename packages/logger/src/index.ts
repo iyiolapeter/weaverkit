@@ -66,7 +66,8 @@ export const Context = {
 		if (!context) {
 			return false;
 		}
-		return context.set(key, value);
+		context.set(key, value);
+		return true;
 	},
 };
 

@@ -67,9 +67,12 @@ export class ValidationNode {
 	}
 
 	public customValidator(fn: (...args: any[]) => any, ...args: any[]) {
+		const negate = this.negateNext;
+		this.negateNext = false;
 		this.rule.validators.push({
 			fn,
 			args,
+			negate,
 		});
 		return this;
 	}
@@ -113,9 +116,12 @@ for (const key of Object.keys(ValidatorJS)) {
 			};
 		} else if (isValidator(key)) {
 			(ValidationNode as any).prototype[key] = function (...args: any[]) {
+				const negate = this.negateNext;
+				this.negateNext = false;
 				this.rule.validators.push({
 					fn: key,
 					args,
+					negate,
 				});
 				return this;
 			};
@@ -185,20 +191,22 @@ export const validate: ValidateFunction = async (obj: Record<string, any>, nodes
 			elems.push(path);
 		}
 		for (const id of elems) {
+			passed = true;
 			const paths = parents.slice();
 			paths.push(id);
 			const parameter = paths.join(".");
-			if (rule.required && !obj[id]) {
+			if (rule.required && obj[id] == null) {
 				passed = false;
 				errors.push({
 					parameter,
 					message: `${id} is required`,
 				});
 				if (onlyFirst) {
-					continue;
+					break;
 				}
+				continue;
 			}
-			if (!rule.required && !obj[id]) {
+			if (!rule.required && obj[id] == null) {
 				continue;
 			}
 			for (const validatorObj of rule.validators) {
@@ -208,17 +216,18 @@ export const validate: ValidateFunction = async (obj: Record<string, any>, nodes
 					errors.push(...(await validate(obj[id], [validatorObj], childOptions)));
 					continue;
 				}
-				const { fn: predicate, args, message } = validatorObj;
+				const { fn: predicate, args, message, negate } = validatorObj;
 				if (typeof predicate === "string") {
 					if (["string", "number"].includes(typeof obj[id])) {
-						if (!(ValidatorJS as any)[predicate](String(obj[id]), ...args)) {
+						const result = (ValidatorJS as any)[predicate](String(obj[id]), ...args);
+						if (negate ? result : !result) {
 							passed = false;
 							errors.push({
 								parameter,
 								message: message || "Invalid Value",
 							});
 							if (onlyFirst) {
-								continue;
+								break;
 							}
 						}
 					} else {
@@ -227,18 +236,22 @@ export const validate: ValidateFunction = async (obj: Record<string, any>, nodes
 							parameter,
 							message: "Invalid type",
 						});
+						if (onlyFirst) {
+							break;
+						}
 					}
 				} else if (predicate instanceof ValidationNode) {
-					await validate(obj[id], [predicate], options);
+					errors.push(...(await validate(obj[id], [predicate], options)));
 				} else if (typeof predicate === "function") {
-					if (!(await predicate(obj[id], obj, ...args))) {
+					const result = await predicate(obj[id], obj, ...args);
+					if (negate ? result : !result) {
 						passed = false;
 						errors.push({
 							parameter,
 							message: message || "Invalid Value",
 						});
 						if (onlyFirst) {
-							continue;
+							break;
 						}
 					}
 				} else {
