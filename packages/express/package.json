@@ -1,6 +1,6 @@
 {
 	"name": "@weaverkit/express",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"description": "> TODO: description",
 	"author": "Peter Smart <iyiolapeter@gmail.com>",
 	"homepage": "",
@@ -29,8 +29,8 @@
 	},
 	"devDependencies": {
 		"@types/express": "^4.17.21",
-		"@weaverkit/data": "^0.2.0",
-		"@weaverkit/errors": "^0.2.0",
+		"@weaverkit/data": "^0.3.0",
+		"@weaverkit/errors": "^0.3.0",
 		"express": "^4.21.2",
 		"express-validator": "^7.2.1",
 		"reflect-metadata": "^0.2.2",

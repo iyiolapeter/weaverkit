@@ -1,6 +1,6 @@
 {
 	"name": "@weaverkit/validator",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"description": "Chainable object schema validation based on Validator.js and some",
 	"author": "Peter Smart <iyiolapeter@gmail.com>",
 	"homepage": "",
