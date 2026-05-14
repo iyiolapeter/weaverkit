@@ -1,3 +1,4 @@
+import { EventEmitter } from "events";
 import { AppError, ConflictError, NotFoundError, ServerError } from "@weaverkit/errors";
 import { encode, decode } from "./codec";
 import type {
@@ -16,6 +17,14 @@ const BLPOP_TIMEOUT = 5; // seconds — finite for graceful shutdown
 const PAYLOAD_BLPOP_TIMEOUT = 60; // seconds — matches req key TTL
 const REPLY_CHANNEL_PATTERN = /^rpc:reply:[A-Za-z0-9_-]{1,64}$/;
 
+export enum RpcServerEvents {
+	SYN_REJECTED = "syn:rejected",
+	HANDLER_START = "handler:start",
+	HANDLER_END = "handler:end",
+	HANDLER_ERROR = "handler:error",
+	PAYLOAD_TIMEOUT = "payload:timeout",
+}
+
 const defaultLogger: RpcLogger = (level, message, meta) => {
 	if (meta) console[level](message, meta);
 	else console[level](message);
@@ -28,8 +37,9 @@ export class RpcServer {
 	private readonly adapter: any;
 	private readonly logger: RpcLogger;
 	private readonly handlers = new Map<string, RpcHandler>();
+	private readonly emitter = new EventEmitter();
 	private publisher!: any;
-	private listeners: any[] = [];
+	private listenerConns: any[] = [];
 	private loopPromises: Promise<void>[] = [];
 	private running = false;
 
@@ -39,6 +49,26 @@ export class RpcServer {
 		this.concurrency = options.concurrency ?? DEFAULT_CONCURRENCY;
 		this.ackTimeout = options.ackTimeout ?? DEFAULT_ACK_TIMEOUT;
 		this.logger = options.logger ?? defaultLogger;
+	}
+
+	public on(event: RpcServerEvents, listener: (payload: any) => void): this {
+		this.emitter.on(event, listener);
+		return this;
+	}
+
+	public off(event: RpcServerEvents, listener: (payload: any) => void): this {
+		this.emitter.off(event, listener);
+		return this;
+	}
+
+	public once(event: RpcServerEvents, listener: (payload: any) => void): this {
+		this.emitter.once(event, listener);
+		return this;
+	}
+
+	public removeAllListeners(event?: RpcServerEvents): this {
+		this.emitter.removeAllListeners(event);
+		return this;
 	}
 
 	public register<T = any, R = any>(action: string, handler: RpcHandler<T, R>): void {
@@ -61,7 +91,7 @@ export class RpcServer {
 		for (let i = 0; i < this.concurrency; i++) {
 			const listenerAdapter = this.adapter.clone({ prefix: "" } as any);
 			const conn = listenerAdapter.connection;
-			this.listeners.push(conn);
+			this.listenerConns.push(conn);
 			this.loopPromises.push(this.listenLoop(conn));
 		}
 	}
@@ -70,11 +100,11 @@ export class RpcServer {
 		this.running = false;
 		// Each listener exits its loop after at most BLPOP_TIMEOUT + handler runtime
 		await Promise.allSettled(this.loopPromises);
-		for (const conn of this.listeners) {
+		for (const conn of this.listenerConns) {
 			conn.disconnect();
 		}
 		this.publisher?.disconnect();
-		this.listeners = [];
+		this.listenerConns = [];
 		this.loopPromises = [];
 	}
 
@@ -106,7 +136,13 @@ export class RpcServer {
 
 				const syn = decode(result[1]) as RpcSyn;
 				if (Date.now() - syn.timestamp > this.ackTimeout) {
-					continue; // stale
+					this.emitter.emit(RpcServerEvents.SYN_REJECTED, {
+						correlationId: syn.correlationId,
+						action: syn.action,
+						replyTo: syn.replyTo,
+						reason: "stale",
+					});
+					continue;
 				}
 
 				// Awaited so a slow payload-BLPOP can't queue behind the loop's
@@ -138,6 +174,12 @@ export class RpcServer {
 				replyTo,
 				action,
 			});
+			this.emitter.emit(RpcServerEvents.SYN_REJECTED, {
+				correlationId,
+				action,
+				replyTo,
+				reason: "invalid-replyTo",
+			});
 			return;
 		}
 
@@ -150,6 +192,12 @@ export class RpcServer {
 				error: new NotFoundError(
 					`RPC action "${action}" is not registered on service "${this.service}"`,
 				).serialize(),
+			});
+			this.emitter.emit(RpcServerEvents.SYN_REJECTED, {
+				correlationId,
+				action,
+				replyTo,
+				reason: "unknown-action",
 			});
 			return;
 		}
@@ -166,6 +214,7 @@ export class RpcServer {
 			this.logger("warn", `[rpc:${this.service}] orphaned correlation — no payload received`, {
 				correlationId,
 			});
+			this.emitter.emit(RpcServerEvents.PAYLOAD_TIMEOUT, { correlationId, action });
 			return;
 		}
 
@@ -183,10 +232,18 @@ export class RpcServer {
 		};
 
 		// Execute handler
+		this.emitter.emit(RpcServerEvents.HANDLER_START, { correlationId, action });
+		const handlerStart = Date.now();
 		try {
 			const result = await handler(ctx);
 			await this.publishReply(replyTo, { type: "result", correlationId, data: result });
+			this.emitter.emit(RpcServerEvents.HANDLER_END, {
+				correlationId,
+				action,
+				durationMs: Date.now() - handlerStart,
+			});
 		} catch (err) {
+			const durationMs = Date.now() - handlerStart;
 			let appError: AppError;
 			if (err instanceof AppError) {
 				appError = err;
@@ -203,6 +260,12 @@ export class RpcServer {
 				type: "error",
 				correlationId,
 				error: appError.serialize(),
+			});
+			this.emitter.emit(RpcServerEvents.HANDLER_ERROR, {
+				correlationId,
+				action,
+				durationMs,
+				error: err as Error,
 			});
 		}
 	}

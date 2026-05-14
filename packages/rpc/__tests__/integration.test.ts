@@ -1,6 +1,6 @@
 import { AppError, NotFoundError, BadRequestError, ValidationError, ServerError } from "@weaverkit/errors";
 import { RpcClient } from "../src/client";
-import { RpcServer } from "../src/server";
+import { RpcServer, RpcServerEvents } from "../src/server";
 import { encode } from "../src/codec";
 /**
  * Coordinated mock Redis that bridges client and server:
@@ -245,5 +245,75 @@ describe("RPC Integration", () => {
 		expect(warnLog).toBeDefined();
 		expect(warnLog!.level).toBe("warn");
 		expect(warnLog!.meta!.replyTo).toBe("evil-channel");
+	});
+
+	describe("server events", () => {
+		const waitFor = (event: RpcServerEvents) =>
+			new Promise<any>((resolve) => server.once(event, resolve));
+
+		it("emits handler:start and handler:end on successful call", async () => {
+			const events: Array<{ type: string; payload: any }> = [];
+			server.on(RpcServerEvents.HANDLER_START, (p) => events.push({ type: "start", payload: p }));
+			server.on(RpcServerEvents.HANDLER_END, (p) => events.push({ type: "end", payload: p }));
+
+			const ended = waitFor(RpcServerEvents.HANDLER_END);
+			await client.call("webhook", "echo", { x: 1 });
+			await ended;
+
+			expect(events).toHaveLength(2);
+			expect(events[0].type).toBe("start");
+			expect(events[0].payload.action).toBe("echo");
+			expect(typeof events[0].payload.correlationId).toBe("string");
+			expect(events[1].type).toBe("end");
+			expect(events[1].payload.action).toBe("echo");
+			expect(events[1].payload.correlationId).toBe(events[0].payload.correlationId);
+			expect(typeof events[1].payload.durationMs).toBe("number");
+			expect(events[1].payload.durationMs).toBeGreaterThanOrEqual(0);
+		});
+
+		it("emits handler:error when the handler throws", async () => {
+			const errored = waitFor(RpcServerEvents.HANDLER_ERROR);
+			await client.call("webhook", "throw-plain-error", {}).catch(() => {});
+			const payload = await errored;
+
+			expect(payload.action).toBe("throw-plain-error");
+			expect(payload.error).toBeInstanceOf(Error);
+			expect((payload.error as Error).message).toBe("cannot read x of undefined");
+			expect(typeof payload.durationMs).toBe("number");
+		});
+
+		it("emits syn:rejected with reason=unknown-action for nonexistent actions", async () => {
+			const rejected = waitFor(RpcServerEvents.SYN_REJECTED);
+			await client.call("webhook", "nonexistent", {}).catch(() => {});
+			const payload = await rejected;
+
+			expect(payload.reason).toBe("unknown-action");
+			expect(payload.action).toBe("nonexistent");
+		});
+
+		it("emits syn:rejected with reason=invalid-replyTo for malformed SYNs", async () => {
+			const rejected: any[] = [];
+			server.on(RpcServerEvents.SYN_REJECTED, (p) => rejected.push(p));
+
+			const directConn = coordinated.createAdapter().connection;
+			await directConn.rpush(
+				"rpc:syn:webhook",
+				encode({
+					correlationId: "fake-id-2",
+					replyTo: "evil-channel-2",
+					action: "echo",
+					timestamp: Date.now(),
+				}),
+			);
+			await new Promise((r) => setTimeout(r, 100));
+
+			expect(rejected).toHaveLength(1);
+			expect(rejected[0].reason).toBe("invalid-replyTo");
+			expect(rejected[0].replyTo).toBe("evil-channel-2");
+		});
+
+		it("does not expose emit() on the public API", () => {
+			expect((server as any).emit).toBeUndefined();
+		});
 	});
 });

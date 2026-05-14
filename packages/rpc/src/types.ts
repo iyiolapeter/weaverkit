@@ -61,6 +61,40 @@ export type LogLevel = "error" | "warn" | "info" | "debug";
 
 export type RpcLogger = (level: LogLevel, message: string, meta?: Record<string, any>) => void;
 
+// --- Server events (for metrics/tracing) ---
+
+export type RpcSynRejectionReason = "invalid-replyTo" | "stale" | "unknown-action";
+
+export interface RpcSynRejectedEvent {
+	correlationId: string;
+	action: string;
+	replyTo: string;
+	reason: RpcSynRejectionReason;
+}
+
+export interface RpcHandlerStartEvent {
+	correlationId: string;
+	action: string;
+}
+
+export interface RpcHandlerEndEvent {
+	correlationId: string;
+	action: string;
+	durationMs: number;
+}
+
+export interface RpcHandlerErrorEvent {
+	correlationId: string;
+	action: string;
+	durationMs: number;
+	error: Error;
+}
+
+export interface RpcPayloadTimeoutEvent {
+	correlationId: string;
+	action: string;
+}
+
 // --- Options ---
 
 export interface RpcClientOptions {

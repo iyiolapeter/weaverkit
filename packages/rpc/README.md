@@ -151,6 +151,87 @@ await client.call("webhook", "slow-action", payload, {
 
 ---
 
+## Server events (metrics / tracing)
+
+`RpcServer` exposes a typed event surface — `on(event, listener)`, `once`, `off`, `removeAllListeners`. There is no public `emit`: events fire only from inside the server itself, so listeners can trust the payload was produced by the protocol path.
+
+```ts
+import { RpcServerEvents } from "@weaverkit/rpc";
+
+server.on(RpcServerEvents.HANDLER_END, ({ action, durationMs }) => {
+  metrics.histogram("rpc_handler_duration_ms").labels(action).observe(durationMs);
+});
+```
+
+### Events
+
+| Event | Fires when | Payload |
+| --- | --- | --- |
+| `syn:rejected` | SYN dropped without invoking a handler | `{ correlationId, action, replyTo, reason }` where `reason` is `"invalid-replyTo" \| "stale" \| "unknown-action"` |
+| `handler:start` | Just before the registered handler is invoked (payload already received) | `{ correlationId, action }` |
+| `handler:end` | Handler resolved successfully | `{ correlationId, action, durationMs }` |
+| `handler:error` | Handler threw (`AppError` *or* unhandled exception) | `{ correlationId, action, durationMs, error }` |
+| `payload:timeout` | ACK was sent but the client never delivered the payload (caller died after ACK) | `{ correlationId, action }` |
+
+`correlationId` is stable across all events for a single call, so listeners can stitch a trace together.
+
+### Prometheus recipe
+
+```ts
+import client from "prom-client";
+
+const duration = new client.Histogram({
+  name: "rpc_handler_duration_seconds",
+  help: "RPC handler duration",
+  labelNames: ["action", "outcome"],
+});
+const errors = new client.Counter({
+  name: "rpc_handler_errors_total",
+  labelNames: ["action", "code"],
+});
+const rejected = new client.Counter({
+  name: "rpc_syn_rejected_total",
+  labelNames: ["reason"],
+});
+
+server.on(RpcServerEvents.HANDLER_END, ({ action, durationMs }) => {
+  duration.labels(action, "ok").observe(durationMs / 1000);
+});
+server.on(RpcServerEvents.HANDLER_ERROR, ({ action, durationMs, error }) => {
+  duration.labels(action, "error").observe(durationMs / 1000);
+  errors.labels(action, (error as any).code ?? "UNKNOWN").inc();
+});
+server.on(RpcServerEvents.SYN_REJECTED, ({ reason }) => {
+  rejected.labels(reason).inc();
+});
+```
+
+### OpenTelemetry recipe
+
+```ts
+import { trace, Span } from "@opentelemetry/api";
+const tracer = trace.getTracer("@weaverkit/rpc");
+const spans = new Map<string, Span>();
+
+server.on(RpcServerEvents.HANDLER_START, ({ correlationId, action }) => {
+  spans.set(correlationId, tracer.startSpan(`rpc.${action}`));
+});
+const close = ({ correlationId, error }: { correlationId: string; error?: Error }) => {
+  const span = spans.get(correlationId);
+  if (!span) return;
+  if (error) span.recordException(error);
+  span.setStatus({ code: error ? 2 : 1 });
+  span.end();
+  spans.delete(correlationId);
+};
+server.on(RpcServerEvents.HANDLER_END, close);
+server.on(RpcServerEvents.HANDLER_ERROR, close);
+```
+
+For full cross-process tracing, add an OTEL `traceContext` field to your SYN and propagate it to the server-side span — this isn't built in yet (see roadmap).
+
+---
+
 ## Security model
 
 ### Trust boundary
