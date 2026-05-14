@@ -31,6 +31,6 @@
 		"typescript": "4.9.5"
 	},
 	"peerDependencies": {
-		"mongoose": "^8.12.2"
+		"mongoose": "^8.23.1"
 	}
 }
