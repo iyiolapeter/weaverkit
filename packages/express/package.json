@@ -38,8 +38,8 @@
 	},
 	"peerDependencies": {
 		"@types/express": "^4.17.21",
-		"@weaverkit/data": "^0.2.0-aplha.1",
-		"@weaverkit/errors": "^0.2.0-aplha.1",
+		"@weaverkit/data": "^0.3.0",
+		"@weaverkit/errors": "^0.3.0",
 		"express": "^4.21.2",
 		"express-validator": "^7.2.1",
 		"reflect-metadata": "^0.1.14"
