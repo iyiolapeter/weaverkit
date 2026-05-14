@@ -1,7 +1,7 @@
 "use strict";
 import { tmpdir } from "os";
 import { writeFileSync, mkdirSync } from "fs";
-import { join } from "path";
+import { join, resolve } from "path";
 import { Artifact, Content, Redirection, Sendable, BaseView, ViewFactory } from "./../src";
 
 // ---------------------------------------------------------------------------
@@ -178,9 +178,24 @@ describe("BaseView.normalize()", () => {
 		expect(withSlash).toBe(withoutSlash);
 	});
 
-	it("double-slash paths are resolved by path.resolve (normalized to single slash)", () => {
+	it("double-slash paths bypass the traversal guard (explicit absolute opt-in)", () => {
 		const result = BaseView.normalize("//absolute/path", folder, ext);
 		expect(result).toContain("/absolute/path.ejs");
+	});
+
+	it("rejects ../ traversal escaping the views folder", () => {
+		expect(() => BaseView.normalize("../../etc/passwd", folder, ext)).toThrow(/path traversal blocked/);
+	});
+
+	it("rejects ../ traversal even from nested view names", () => {
+		expect(() => BaseView.normalize("admin/../../etc/passwd", folder, ext)).toThrow(
+			/path traversal blocked/,
+		);
+	});
+
+	it("allows nested paths that stay under the folder", () => {
+		const result = BaseView.normalize("admin/users/profile", folder, ext);
+		expect(result).toBe(resolve(folder, "admin/users/profile.ejs"));
 	});
 });
 

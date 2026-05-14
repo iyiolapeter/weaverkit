@@ -55,6 +55,12 @@ export interface RpcHandlerContext<T = any> {
 
 export type RpcHandler<T = any, R = any> = (ctx: RpcHandlerContext<T>) => Promise<R>;
 
+// --- Logger ---
+
+export type LogLevel = "error" | "warn" | "info" | "debug";
+
+export type RpcLogger = (level: LogLevel, message: string, meta?: Record<string, any>) => void;
+
 // --- Options ---
 
 export interface RpcClientOptions {
@@ -68,6 +74,7 @@ export interface RpcServerOptions {
 	service: string;
 	concurrency?: number;
 	ackTimeout?: number;
+	logger?: RpcLogger;
 }
 
 export interface RpcCallOptions {

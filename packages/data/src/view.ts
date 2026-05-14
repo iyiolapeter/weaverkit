@@ -1,4 +1,4 @@
-import { resolve } from "path";
+import { resolve, sep } from "path";
 import { renderFile } from "ejs";
 import { EJSRenderConfig, Renderer } from "./renderer";
 
@@ -36,10 +36,18 @@ export abstract class BaseView extends Renderer {
 		if (view.endsWith("/")) {
 			view += `index${ext}`;
 		}
-		if (!view.startsWith("//") && view.startsWith("/")) {
+		const explicitAbsolute = view.startsWith("//");
+		if (!explicitAbsolute && view.startsWith("/")) {
 			view = view.substring(1);
 		}
-		return resolve(folder, `${view}${view.endsWith(ext) ? "" : ext}`);
+		const resolved = resolve(folder, `${view}${view.endsWith(ext) ? "" : ext}`);
+		if (!explicitAbsolute) {
+			const base = resolve(folder);
+			if (resolved !== base && !resolved.startsWith(base + sep)) {
+				throw new Error(`View path traversal blocked: "${view}" resolves outside ${base}`);
+			}
+		}
+		return resolved;
 	}
 
 	public async render() {

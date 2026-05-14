@@ -137,3 +137,32 @@ class SilentError extends ServerError {
   static REPORTABLE_DEFAULT = false;
 }
 ```
+
+---
+
+## Security model
+
+### `format()` vs `format(true)` vs `serialize()`
+
+| Method | Includes | Use for |
+| --- | --- | --- |
+| `format()` | Safe props only — `code`, `message`, `info`, (and `fields` for `ValidationError`) | **HTTP response bodies** and anything else that crosses a trust boundary. This is the default for a reason. |
+| `format(true)` | All own properties on the instance, including `inner`, `context`, `httpHeaders`, `loggable`, `reportable`, custom subclass fields | **Server-side logging only.** Never send this to a client — `inner` may carry a wrapped driver error with stack-equivalent detail. |
+| `serialize()` | A wire-format envelope used by `@weaverkit/rpc` and other cross-process consumers — `httpCode`, `code`, `message`, `info`, plus optional `fields`/`serviceName` | Cross-process error transport. Like `format()`, it never includes `inner` or `context`. |
+
+### Wrapping caught exceptions
+
+`new ServerError().setInner(err)` is the idiomatic way to attach the original throw for server-side observability. The `inner` field never crosses `format()`, `serialize()`, or the rpc wire — it's only visible to `format(true)` and direct property access. Treat `inner` as **server-only state**.
+
+```typescript
+try {
+  await db.query(...);
+} catch (err) {
+  throw new ServerError("Database error").setInner(err);
+  // The caller sees "Database error". The driver error stays in inner.
+}
+```
+
+### Overriding `safeProps()`
+
+When you add custom properties to a subclass, decide whether they're safe to expose. The base `safeProps()` returns `{ code, message, info }`. Anything you add that contains PII, request-scoped state, internal IDs, or secrets must **not** be included in the override.

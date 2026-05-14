@@ -146,3 +146,31 @@ artifact.emitter.on("aftersend", () => {
   // called just after send()
 });
 ```
+
+---
+
+## Security model
+
+### View names must be server-controlled
+
+`new View({ name })` resolves `name` against the configured views folder and EJS-renders the result. EJS executes JavaScript inside `<% %>` tags, so the resolved file effectively runs server-side code. **Never pass user input as `name`** — `req.query.template`, route params, body fields, etc. are off-limits.
+
+To guard against accidental misuse, `BaseView.normalize` blocks `../` traversal that would escape the views folder:
+
+```typescript
+new View({ name: "../../etc/passwd" });  // throws: View path traversal blocked
+new View({ name: "admin/../../etc/passwd" }); // throws
+new View({ name: "admin/users/profile" }); // OK — stays under folder
+```
+
+The guard is **deliberately bypassable** via a `//` prefix, intended for cases where the consumer genuinely wants to render a file from an absolute path:
+
+```typescript
+new View({ name: "//var/templates/email/welcome" }); // skips the guard
+```
+
+If you use the `//` form, treat the value as code: it must be a constant or come from a strictly-validated server config, never from user input.
+
+### `Content` template strings are evaluated
+
+`new Content(template, data)` passes `template` directly to `ejs.render()`. The template string is server code — any `<%- %>` inside is evaluated as JavaScript. Build templates from constants or trusted files; do not concatenate user input into the template string itself. (User input belongs in `data`, where EJS escapes it appropriately for `<%= %>` interpolations.)

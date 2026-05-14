@@ -1,18 +1,32 @@
 import { AppError, ConflictError, NotFoundError, ServerError } from "@weaverkit/errors";
-import { Logger } from "@weaverkit/logger";
 import { encode, decode } from "./codec";
-import type { RpcSyn, RpcPayload, RpcReply, RpcHandler, RpcHandlerContext, RpcServerOptions } from "./types";
+import type {
+	RpcSyn,
+	RpcPayload,
+	RpcReply,
+	RpcHandler,
+	RpcHandlerContext,
+	RpcServerOptions,
+	RpcLogger,
+} from "./types";
 
 const DEFAULT_CONCURRENCY = 1;
 const DEFAULT_ACK_TIMEOUT = 2000;
 const BLPOP_TIMEOUT = 5; // seconds — finite for graceful shutdown
 const PAYLOAD_BLPOP_TIMEOUT = 60; // seconds — matches req key TTL
+const REPLY_CHANNEL_PATTERN = /^rpc:reply:[A-Za-z0-9_-]{1,64}$/;
+
+const defaultLogger: RpcLogger = (level, message, meta) => {
+	if (meta) console[level](message, meta);
+	else console[level](message);
+};
 
 export class RpcServer {
 	private readonly service: string;
 	private readonly concurrency: number;
 	private readonly ackTimeout: number;
 	private readonly adapter: any;
+	private readonly logger: RpcLogger;
 	private readonly handlers = new Map<string, RpcHandler>();
 	private publisher!: any;
 	private listeners: any[] = [];
@@ -24,6 +38,7 @@ export class RpcServer {
 		this.service = options.service;
 		this.concurrency = options.concurrency ?? DEFAULT_CONCURRENCY;
 		this.ackTimeout = options.ackTimeout ?? DEFAULT_ACK_TIMEOUT;
+		this.logger = options.logger ?? defaultLogger;
 	}
 
 	public register<T = any, R = any>(action: string, handler: RpcHandler<T, R>): void {
@@ -99,14 +114,14 @@ export class RpcServer {
 				try {
 					await this.handleSyn(conn, syn);
 				} catch (err) {
-					Logger.error(`[rpc:${this.service}] handler error for action "${syn.action}"`, {
+					this.logger("error", `[rpc:${this.service}] handler error for action "${syn.action}"`, {
 						err,
 						correlationId: syn.correlationId,
 					});
 				}
 			} catch (err) {
 				if (!this.running) break;
-				Logger.error(`[rpc:${this.service}] listener error`, { err });
+				this.logger("error", `[rpc:${this.service}] listener error`, { err });
 				await new Promise((resolve) => setTimeout(resolve, 1000));
 			}
 		}
@@ -114,6 +129,17 @@ export class RpcServer {
 
 	private async handleSyn(conn: any, syn: RpcSyn): Promise<void> {
 		const { correlationId, replyTo, action } = syn;
+
+		// Reject SYNs whose replyTo doesn't conform to the protocol — protects against
+		// a malformed/malicious client directing replies to arbitrary Redis channels.
+		if (typeof replyTo !== "string" || !REPLY_CHANNEL_PATTERN.test(replyTo)) {
+			this.logger("warn", `[rpc:${this.service}] dropped SYN with invalid replyTo`, {
+				correlationId,
+				replyTo,
+				action,
+			});
+			return;
+		}
 
 		// Check if action is registered
 		const handler = this.handlers.get(action);
@@ -137,7 +163,7 @@ export class RpcServer {
 
 		if (!payloadResult) {
 			// Caller died after ACK — orphaned correlation
-			Logger.warn(`[rpc:${this.service}] orphaned correlation — no payload received`, {
+			this.logger("warn", `[rpc:${this.service}] orphaned correlation — no payload received`, {
 				correlationId,
 			});
 			return;
@@ -161,7 +187,18 @@ export class RpcServer {
 			const result = await handler(ctx);
 			await this.publishReply(replyTo, { type: "result", correlationId, data: result });
 		} catch (err) {
-			const appError = err instanceof AppError ? err : new ServerError((err as Error).message);
+			let appError: AppError;
+			if (err instanceof AppError) {
+				appError = err;
+			} else {
+				// Don't leak raw exception messages (DB errors, file paths, etc.) to the caller.
+				// Log server-side; the caller gets a generic message correlatable via correlationId.
+				this.logger("error", `[rpc:${this.service}] handler "${action}" threw non-AppError`, {
+					err,
+					correlationId,
+				});
+				appError = new ServerError("Internal server error");
+			}
 			await this.publishReply(replyTo, {
 				type: "error",
 				correlationId,

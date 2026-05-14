@@ -1,6 +1,7 @@
 import { AppError, NotFoundError, BadRequestError, ValidationError, ServerError } from "@weaverkit/errors";
 import { RpcClient } from "../src/client";
 import { RpcServer } from "../src/server";
+import { encode } from "../src/codec";
 /**
  * Coordinated mock Redis that bridges client and server:
  * - Client RPUSH to syn/req lists → Server BLPOP reads from them
@@ -112,15 +113,18 @@ describe("RPC Integration", () => {
 	let coordinated: ReturnType<typeof createCoordinatedRedis>;
 	let client: RpcClient;
 	let server: RpcServer;
+	let serverLogs: Array<{ level: string; message: string; meta?: any }>;
 
 	beforeEach(async () => {
 		coordinated = createCoordinatedRedis();
+		serverLogs = [];
 
 		server = new RpcServer({
 			redis: coordinated.createAdapter(),
 			service: "webhook",
 			concurrency: 1,
 			ackTimeout: 2000,
+			logger: (level, message, meta) => serverLogs.push({ level, message, meta }),
 		});
 
 		server.register("echo", async (ctx) => {
@@ -198,14 +202,19 @@ describe("RPC Integration", () => {
 		}
 	});
 
-	it("throw-plain-error: receives ServerError wrapping non-AppError", async () => {
+	it("throw-plain-error: caller receives generic ServerError; raw message stays server-side", async () => {
 		try {
 			await client.call("webhook", "throw-plain-error", {});
 			fail("should have thrown");
 		} catch (err) {
 			expect(err).toBeInstanceOf(ServerError);
-			expect((err as AppError).message).toBe("cannot read x of undefined");
+			expect((err as AppError).message).toBe("Internal server error");
+			expect((err as AppError).message).not.toContain("cannot read x of undefined");
 		}
+		const serverErrorLog = serverLogs.find((l) => l.message.includes("threw non-AppError"));
+		expect(serverErrorLog).toBeDefined();
+		expect(serverErrorLog!.level).toBe("error");
+		expect((serverErrorLog!.meta!.err as Error).message).toBe("cannot read x of undefined");
 	});
 
 	it("unknown action: receives NotFoundError without payload round-trip", async () => {
@@ -216,5 +225,25 @@ describe("RPC Integration", () => {
 			expect(err).toBeInstanceOf(NotFoundError);
 			expect((err as AppError).message).toContain("nonexistent");
 		}
+	});
+
+	it("invalid replyTo: SYN is dropped, logged, no publish happens", async () => {
+		const directConn = coordinated.createAdapter().connection;
+		await directConn.rpush(
+			"rpc:syn:webhook",
+			encode({
+				correlationId: "fake-id",
+				replyTo: "evil-channel",
+				action: "echo",
+				timestamp: Date.now(),
+			}),
+		);
+
+		await new Promise((r) => setTimeout(r, 100));
+
+		const warnLog = serverLogs.find((l) => l.message.includes("invalid replyTo"));
+		expect(warnLog).toBeDefined();
+		expect(warnLog!.level).toBe("warn");
+		expect(warnLog!.meta!.replyTo).toBe("evil-channel");
 	});
 });
