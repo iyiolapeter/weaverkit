@@ -28,7 +28,7 @@
 		"winston-daily-rotate-file": "^5.0.0"
 	},
 	"devDependencies": {
-		"typescript": "4.9.5"
+		"typescript": "^5.7.3"
 	},
 	"publishConfig": {
 		"access": "public"

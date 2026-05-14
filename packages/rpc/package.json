@@ -33,7 +33,7 @@
 		"@weaverkit/errors": "^0.3.0"
 	},
 	"devDependencies": {
-		"typescript": "4.9.5"
+		"typescript": "^5.7.3"
 	},
 	"gitHead": "71c159fdd4f56daf42e0cf1012d740425697f99e"
 }

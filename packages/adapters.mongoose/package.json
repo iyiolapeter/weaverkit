@@ -28,7 +28,7 @@
 		"@weaverkit/adapters.base": "^0.3.0"
 	},
 	"devDependencies": {
-		"typescript": "4.9.5"
+		"typescript": "^5.7.3"
 	},
 	"peerDependencies": {
 		"mongoose": "^8.23.1"

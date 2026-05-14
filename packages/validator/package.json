@@ -25,7 +25,7 @@
 	},
 	"gitHead": "71c159fdd4f56daf42e0cf1012d740425697f99e",
 	"devDependencies": {
-		"typescript": "4.9.5"
+		"typescript": "^5.7.3"
 	},
 	"peerDependencies": {
 		"@types/validator": "^13.12.2",
