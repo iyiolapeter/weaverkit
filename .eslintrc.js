@@ -22,4 +22,12 @@ module.exports = {
 			},
 		],
 	},
+	overrides: [
+		{
+			files: ["packages/adapters.redis/src/model.ts", "packages/validator/src/validator.ts"],
+			rules: {
+				"@typescript-eslint/no-unsafe-declaration-merging": "off",
+			},
+		},
+	],
 };

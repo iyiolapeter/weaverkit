@@ -4,7 +4,7 @@ import type { BaseExpressApp } from "./app";
 
 export { PathParams };
 
-export interface ClassType<T> extends Function {
+export interface ClassType<T> {
 	new (...args: any[]): T;
 }
 

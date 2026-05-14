@@ -1,39 +1,39 @@
 {
-    "name": "@weaverkit/adapters.sequelize",
-    "version": "0.0.14-rc0",
-    "description": "> TODO: description",
-    "author": "Peter Smart <iyiolapeter@gmail.com>",
-    "homepage": "",
-    "license": "MIT",
-    "main": "lib/index.js",
-    "directories": {
-        "lib": "lib",
-        "test": "__tests__"
-    },
-    "files": [
-        "lib"
-    ],
-    "engines": {
-        "node": ">=12"
-    },
-    "scripts": {
-        "build": "tsc",
-        "test": "echo \"Error: run tests from root\" && exit 1"
-    },
-    "publishConfig": {
-        "access": "public"
-    },
-    "gitHead": "302e89539960cb904d0f1e5a136859a453c5a435",
-    "dependencies": {
-        "@weaverkit/adapters.base": "^0.0.14-rc0"
-    },
-    "devDependencies": {
-        "@types/validator": "^13.7.6",
-        "typescript": "4.7.2"
-    },
-    "peerDependencies": {
-        "reflect-metadata": "^0.1.13",
-        "sequelize": "^6.21.4",
-        "sequelize-typescript": "^2.1.3"
-    }
+	"name": "@weaverkit/adapters.sequelize",
+	"version": "0.3.0",
+	"description": "> TODO: description",
+	"author": "Peter Smart <iyiolapeter@gmail.com>",
+	"homepage": "",
+	"license": "MIT",
+	"main": "lib/index.js",
+	"directories": {
+		"lib": "lib",
+		"test": "__tests__"
+	},
+	"files": [
+		"lib"
+	],
+	"engines": {
+		"node": ">=20"
+	},
+	"scripts": {
+		"build": "tsc",
+		"test": "echo \"Error: run tests from root\" && exit 1"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"gitHead": "71c159fdd4f56daf42e0cf1012d740425697f99e",
+	"dependencies": {
+		"@weaverkit/adapters.base": "^0.3.0"
+	},
+	"devDependencies": {
+		"@types/validator": "^13.7.6",
+		"typescript": "4.9.5"
+	},
+	"peerDependencies": {
+		"reflect-metadata": "^0.1.14",
+		"sequelize": "^6.37.6",
+		"sequelize-typescript": "^2.1.6"
+	}
 }

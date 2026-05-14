@@ -1,11 +1,14 @@
 {
-  "packages": [
-    "packages/*"
-  ],
-  "command": {
-    "publish": {
-      "graphType": "all"
-    }
-  },
-  "version": "0.0.13"
+	"packages": ["packages/*"],
+	"command": {
+		"publish": {
+			"graphType": "all",
+			"forcePublish": true
+		},
+		"bootstrap": {
+			"hoist": ["reflect-metadata", "@types/node"],
+			"ignoreScripts": true
+		}
+	},
+	"version": "0.3.0"
 }

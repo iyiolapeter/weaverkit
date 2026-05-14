@@ -1,7 +1,10 @@
 import { Sendable } from "./sendable";
 
 export class Artifact<T = Record<string, any>> extends Sendable {
-	constructor(public data: T | null = null, public message?: string) {
+	constructor(
+		public data: T | null = null,
+		public message?: string,
+	) {
 		super();
 	}
 

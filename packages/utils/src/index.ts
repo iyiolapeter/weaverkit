@@ -18,5 +18,5 @@ export const getShortId = () => {
 
 export const getRandom = (digits: number) => {
 	// tslint:disable-next-line: radix
-	return Math.floor(Math.random() * parseInt("8" + "9".repeat(digits - 1)) + parseInt("1" + "0".repeat(digits - 1)));
+	return Math.floor(Math.random() * parseInt("9" + "0".repeat(digits - 1)) + parseInt("1" + "0".repeat(digits - 1)));
 };

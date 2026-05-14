@@ -14,7 +14,7 @@ export const ExtractArg = (obj: any, key?: any) => {
 
 export type ArgResolver = (req: Request, key?: string | symbol) => any;
 
-const PreferValidated = (req: Request, location: Location) => {
+export const PreferValidated = (req: Request, location: Location) => {
 	const validated = (req as any)[VALIDATED_REQUEST_SYMBOL];
 	if (validated && validated[location] !== undefined) {
 		return validated[location];
@@ -99,7 +99,7 @@ export const RequestHandlerFactory = (action: (...args: any[]) => any, resolvers
 			const args = await ResolveArgs(resolvers, { req, res, next });
 			const data = await action(...args);
 			if (handleResponse) {
-				SendResponse(res, data);
+				await SendResponse(res, data);
 			}
 			if (!shouldNext) {
 				return;

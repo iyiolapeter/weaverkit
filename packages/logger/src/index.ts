@@ -12,12 +12,12 @@ export const getLogNamespace = () => {
 	return getNamespace(NAMESPACE);
 };
 
-export const UppercaseLevel = format((info) => {
+export const UppercaseLevel: ReturnType<typeof format> = format((info) => {
 	info.level = info.level.toLocaleUpperCase();
 	return info;
 });
 
-export const LogContextId = format((info) => {
+export const LogContextId: ReturnType<typeof format> = format((info) => {
 	const namespace = getNamespace(NAMESPACE);
 	if (namespace) {
 		const contextId = namespace.get("ContextId");
@@ -66,7 +66,8 @@ export const Context = {
 		if (!context) {
 			return false;
 		}
-		return context.set(key, value);
+		context.set(key, value);
+		return true;
 	},
 };
 
@@ -83,11 +84,11 @@ const TRANSPORTS: Record<string, Transport> = {
 			format.simple(),
 		),
 		silent: false,
-	}),
+	}) as any,
 };
 
 export const Logger = createLogger({
-	transports: Object.values(TRANSPORTS),
+	transports: Object.values(TRANSPORTS) as any,
 });
 
 // export default Logger;
@@ -99,12 +100,18 @@ export const LogStream = {
 };
 
 export const addFileLogging = (logDir: string) => {
-	(TRANSPORTS.file = new LogRotator({
+	TRANSPORTS.file = new LogRotator({
 		level: "debug",
 		handleExceptions: true,
-		format: format.combine(format.errors({ stack: true }), format.timestamp(), UppercaseLevel(), LogContextId(), format.simple()),
+		format: format.combine(
+			format.errors({ stack: true }),
+			format.timestamp(),
+			UppercaseLevel(),
+			LogContextId(),
+			format.simple(),
+		) as any,
 		silent: false,
 		filename: path.resolve(logDir, "%DATE%.log"),
-	})),
-		Logger.add(TRANSPORTS.file);
+	});
+	Logger.add(TRANSPORTS.file as any);
 };

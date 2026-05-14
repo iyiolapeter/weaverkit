@@ -2,8 +2,9 @@ import { ErrorFormatter, MatchedDataOptions, matchedData, validationResult } fro
 import { Request, Response, RouterOptions, Router, NextFunction } from "express";
 import { ValidationError, ServerError } from "@weaverkit/errors";
 import { Sendable, Redirection } from "@weaverkit/data";
-import { CanUse, RouteCollection } from "./interfaces";
+import { CanUse, MiddlewareSignature, NextMiddlewareSignature, RouteCollection } from "./interfaces";
 import { BaseExpressApp } from "./app";
+import { OutgoingHttpHeaders } from "http";
 
 export interface ExpressValidatorOptions {
 	matchedDataOptions?: Partial<MatchedDataOptions>;
@@ -28,15 +29,22 @@ export const CreateRouter = (options?: RouterOptions) => {
 	return Router(options);
 };
 
-export const ValidateRequest = (req: Request, options: ExpressValidatorOptions = {}) => {
-	const defaultErrorFormatter = ({ msg, param }: any) => {
+export const DefaultValidationErrorFormatter: ErrorFormatter<any> = (error) => {
+	if (error.type === "field") {
+		const { path, msg } = error;
 		return {
-			parameter: param,
+			parameter: path,
 			message: msg,
 		};
+	}
+	return {
+		message: error.msg,
 	};
+};
+
+export const ValidateRequest = (req: Request, options: ExpressValidatorOptions = {}) => {
 	const {
-		errorFormatter = defaultErrorFormatter,
+		errorFormatter = DefaultValidationErrorFormatter,
 		errorOptions = { onlyFirstError: true },
 		matchedDataOptions = { onlyValidData: true, includeOptionals: true },
 	} = options;
@@ -57,6 +65,9 @@ const ResolveContext = (req: Request, resolver?: (req: Request) => any) => {
 
 export const SendResponse = async (res: Response, result: any, defaultStatusCode = 200) => {
 	if (result instanceof Sendable) {
+		if (result.httpHeaders) {
+			ApplyHeaders(res, result.httpHeaders);
+		}
 		if (result instanceof Redirection) {
 			return res.redirect(result.httpCode, result.location);
 		}
@@ -70,12 +81,20 @@ export const SendResponse = async (res: Response, result: any, defaultStatusCode
 	return true;
 };
 
+export const ApplyHeaders = (res: Response, headers: OutgoingHttpHeaders) => {
+	for (const [name, value] of Object.entries(headers)) {
+		if (value !== undefined && value !== null) {
+			res.setHeader(name, value);
+		}
+	}
+};
+
 export const ValidatedRequestHandler = (action: (data: any, context?: any) => any, options: ValidatedRequestHandlerOptions = {}) => {
 	const { contextResolver: resolver, validatorOptions } = options;
 	return async (req: Request, res: Response, next: NextFunction) => {
 		try {
 			const data = await action(ValidateRequest(req, validatorOptions), ResolveContext(req, resolver));
-			SendResponse(res, data);
+			await SendResponse(res, data);
 		} catch (error) {
 			next(error);
 		}
@@ -87,11 +106,27 @@ export const MountCollection = (app: CanUse, collection: RouteCollection) => {
 		const handler = IsRouter(loc)
 			? (loc as Router)
 			: loc instanceof BaseExpressApp
-			? loc.app
-			: new ServerError(`Handler defined at route ${route} is not an express router or ExpressApp`);
+				? loc.app
+				: new ServerError(`Handler defined at route ${route} is not an express router or ExpressApp`);
 		if (handler instanceof Error) {
 			throw handler;
 		}
 		app.use(NormalizeRoutePath(route), handler);
 	}
+};
+
+export const RunMiddlewareIf = (
+	condition: (req: Request) => boolean | Promise<boolean>,
+	middleware: MiddlewareSignature | NextMiddlewareSignature,
+) => {
+	return async (req: Request, res: Response, next: NextFunction) => {
+		try {
+			if (await condition(req)) {
+				return middleware(req, res, next);
+			}
+			return next();
+		} catch (error) {
+			next(error);
+		}
+	};
 };

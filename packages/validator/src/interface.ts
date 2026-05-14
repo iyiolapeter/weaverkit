@@ -284,6 +284,33 @@ export interface Validator {
 	contains(str: string): this;
 	matches(pattern: RegExp | string, modifiers?: string): this;
 
+	// Sanitizers
+	blacklist(chars: string): this;
+	escape(): this;
+	unescape(): this;
+	ltrim(chars?: string): this;
+	rtrim(chars?: string): this;
+	trim(chars?: string): this;
+	stripLow(keep_new_lines?: boolean): this;
+	whitelist(chars: string): this;
+	normalizeEmail(options?: {
+		all_lowercase?: boolean;
+		gmail_lowercase?: boolean;
+		gmail_remove_dots?: boolean;
+		gmail_remove_subaddress?: boolean;
+		gmail_convert_googlemaildotcom?: boolean;
+		outlookdotcom_lowercase?: boolean;
+		outlookdotcom_remove_subaddress?: boolean;
+		yahoo_lowercase?: boolean;
+		yahoo_remove_subaddress?: boolean;
+		icloud_lowercase?: boolean;
+		icloud_remove_subaddress?: boolean;
+	}): this;
+	toBoolean(strict?: boolean): this;
+	toDate(): this;
+	toFloat(): this;
+	toInt(radix?: number): this;
+
 	// Additional validator methods
 	not(): this;
 	exists(options?: ExistsOptions): this;
