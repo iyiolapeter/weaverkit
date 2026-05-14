@@ -1,15 +1,7 @@
 import { EventEmitter } from "events";
 import { AppError, ConflictError, NotFoundError, ServerError } from "@weaverkit/errors";
 import { encode, decode } from "./codec";
-import type {
-	RpcSyn,
-	RpcPayload,
-	RpcReply,
-	RpcHandler,
-	RpcHandlerContext,
-	RpcServerOptions,
-	RpcLogger,
-} from "./types";
+import type { RpcSyn, RpcPayload, RpcReply, RpcHandler, RpcHandlerContext, RpcServerOptions, RpcLogger } from "./types";
 
 const DEFAULT_CONCURRENCY = 1;
 const DEFAULT_ACK_TIMEOUT = 2000;
@@ -73,9 +65,7 @@ export class RpcServer {
 
 	public register<T = any, R = any>(action: string, handler: RpcHandler<T, R>): void {
 		if (this.handlers.has(action)) {
-			throw new ConflictError(
-				`RPC action "${action}" is already registered on service "${this.service}"`,
-			);
+			throw new ConflictError(`RPC action "${action}" is already registered on service "${this.service}"`);
 		}
 		this.handlers.set(action, handler);
 	}
@@ -189,9 +179,7 @@ export class RpcServer {
 			await this.publishReply(replyTo, {
 				type: "error",
 				correlationId,
-				error: new NotFoundError(
-					`RPC action "${action}" is not registered on service "${this.service}"`,
-				).serialize(),
+				error: new NotFoundError(`RPC action "${action}" is not registered on service "${this.service}"`).serialize(),
 			});
 			this.emitter.emit(RpcServerEvents.SYN_REJECTED, {
 				correlationId,

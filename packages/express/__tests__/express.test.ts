@@ -236,9 +236,7 @@ describe("MountCollection", () => {
 	});
 
 	it("throws ServerError for an unsupported handler type", () => {
-		expect(() =>
-			MountCollection({ use: jest.fn() } as any, { "/api": "not-valid" as any }),
-		).toThrow(ServerError);
+		expect(() => MountCollection({ use: jest.fn() } as any, { "/api": "not-valid" as any })).toThrow(ServerError);
 	});
 });
 
@@ -273,12 +271,9 @@ describe("RunMiddlewareIf", () => {
 
 	it("forwards condition errors to next", async () => {
 		const err = new Error("condition failed");
-		const mw = RunMiddlewareIf(
-			() => {
-				throw err;
-			},
-			jest.fn(),
-		);
+		const mw = RunMiddlewareIf(() => {
+			throw err;
+		}, jest.fn());
 		const next = jest.fn();
 		await mw({} as any, {} as any, next);
 		expect(next).toHaveBeenCalledWith(err);
@@ -336,7 +331,11 @@ describe("ValidateRequest", () => {
 describe("ValidatedRequestHandler", () => {
 	it("calls action with validated data and sends the response", async () => {
 		const router = Router();
-		router.post("/", evBody("name").notEmpty(), ValidatedRequestHandler(async (data: any) => ({ received: data })));
+		router.post(
+			"/",
+			evBody("name").notEmpty(),
+			ValidatedRequestHandler(async (data: any) => ({ received: data })),
+		);
 		const app = express();
 		app.use(express.json());
 		app.use(router);
@@ -347,7 +346,11 @@ describe("ValidatedRequestHandler", () => {
 
 	it("forwards validation errors to next", async () => {
 		const router = Router();
-		router.post("/", evBody("name").notEmpty(), ValidatedRequestHandler(async (data: any) => data));
+		router.post(
+			"/",
+			evBody("name").notEmpty(),
+			ValidatedRequestHandler(async (data: any) => data),
+		);
 		const errHandler = (err: any, _req: Request, res: Response, _next: NextFunction) => {
 			res.status(422).json({ error: err.code });
 		};
@@ -765,19 +768,13 @@ describe("@UseValidator decorator validation", () => {
 	});
 
 	it("passes with valid input and injects validated body", async () => {
-		const res = await supertest(app)
-			.post("/validated/")
-			.send({ name: "Widget", qty: "5" })
-			.set("Content-Type", "application/json");
+		const res = await supertest(app).post("/validated/").send({ name: "Widget", qty: "5" }).set("Content-Type", "application/json");
 		expect(res.status).toBe(200);
 		expect(res.body.body.name).toBe("Widget");
 	});
 
 	it("returns 422 with invalid input", async () => {
-		const res = await supertest(app)
-			.post("/validated/")
-			.send({ qty: "abc" })
-			.set("Content-Type", "application/json");
+		const res = await supertest(app).post("/validated/").send({ qty: "abc" }).set("Content-Type", "application/json");
 		expect(res.status).toBe(422);
 		expect(res.body.error.code).toBe("INPUT_VALIDATION_ERROR");
 	});
@@ -1164,18 +1161,12 @@ describe("@ValidationObject schema inheritance", () => {
 	});
 
 	it("valid input satisfying both parent and child constraints passes", async () => {
-		const res = await supertest(app)
-			.post("/emp/")
-			.send({ name: "Alice", role: "Engineer" })
-			.set("Content-Type", "application/json");
+		const res = await supertest(app).post("/emp/").send({ name: "Alice", role: "Engineer" }).set("Content-Type", "application/json");
 		expect(res.status).toBe(200);
 	});
 
 	it("missing inherited parent field fails validation", async () => {
-		const res = await supertest(app)
-			.post("/emp/")
-			.send({ role: "Engineer" })
-			.set("Content-Type", "application/json");
+		const res = await supertest(app).post("/emp/").send({ role: "Engineer" }).set("Content-Type", "application/json");
 		expect(res.status).toBe(422);
 	});
 });
@@ -1478,18 +1469,12 @@ describe("MergeSchema merge branch — parent and child share a field name", () 
 	});
 
 	it("fails when parent constraint is violated on the shared field", async () => {
-		const res = await supertest(app)
-			.post("/merge-schema/")
-			.send({ name: "" })
-			.set("Content-Type", "application/json");
+		const res = await supertest(app).post("/merge-schema/").send({ name: "" }).set("Content-Type", "application/json");
 		expect(res.status).toBe(422);
 	});
 
 	it("passes when merged constraints are all satisfied", async () => {
-		const res = await supertest(app)
-			.post("/merge-schema/")
-			.send({ name: "Alice" })
-			.set("Content-Type", "application/json");
+		const res = await supertest(app).post("/merge-schema/").send({ name: "Alice" }).set("Content-Type", "application/json");
 		expect(res.status).toBe(200);
 	});
 });
@@ -1523,10 +1508,7 @@ describe("@OneOf class decorator", () => {
 	});
 
 	it("passes when at least one oneOf chain is satisfied", async () => {
-		const res = await supertest(app)
-			.post("/contact/")
-			.send({ email: "user@example.com" })
-			.set("Content-Type", "application/json");
+		const res = await supertest(app).post("/contact/").send({ email: "user@example.com" }).set("Content-Type", "application/json");
 		expect(res.status).toBe(200);
 	});
 
@@ -1544,9 +1526,7 @@ describe("@OneOf class decorator", () => {
 // ---------------------------------------------------------------------------
 describe("SetGlobalValidationOptions", () => {
 	it("merges new options into the global validation defaults without throwing", () => {
-		expect(() =>
-			SetGlobalValidationOptions({ errorOptions: { onlyFirstError: false } }),
-		).not.toThrow();
+		expect(() => SetGlobalValidationOptions({ errorOptions: { onlyFirstError: false } })).not.toThrow();
 		// Restore default
 		SetGlobalValidationOptions({ errorOptions: { onlyFirstError: true } });
 	});
@@ -1558,12 +1538,8 @@ describe("SetGlobalValidationOptions", () => {
 describe("CreateValidationMiddleware", () => {
 	it("calls next() when validation passes", async () => {
 		const router = Router();
-		router.post(
-			"/",
-			express.json(),
-			evBody("q").notEmpty(),
-			CreateValidationMiddleware(["body"]),
-			(_req: Request, res: Response) => res.json({ ok: true }),
+		router.post("/", express.json(), evBody("q").notEmpty(), CreateValidationMiddleware(["body"]), (_req: Request, res: Response) =>
+			res.json({ ok: true }),
 		);
 		const app = express();
 		app.use(router);
@@ -1636,10 +1612,7 @@ describe("ConstraintToValidator with function $if", () => {
 	});
 
 	it("runs validation when $if function returns true (active: true)", async () => {
-		const res = await supertest(app)
-			.post("/conditional-fn/")
-			.send({ active: true, value: "" })
-			.set("Content-Type", "application/json");
+		const res = await supertest(app).post("/conditional-fn/").send({ active: true, value: "" }).set("Content-Type", "application/json");
 		expect(res.status).toBe(422);
 	});
 

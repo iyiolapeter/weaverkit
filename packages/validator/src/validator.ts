@@ -6,7 +6,7 @@ const extraSanitizers = ["blacklist", "escape", "unescape", "normalizeEmail", "l
 const isSanitizer = (name: string) => name.startsWith("to") || extraSanitizers.includes(name);
 const isValidator = (name: string) => name.startsWith("is") || extraValidators.includes(name);
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface ValidationNode extends Validator {}
 export class ValidationNode {
 	public negateNext!: boolean;

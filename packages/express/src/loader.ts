@@ -21,7 +21,7 @@ export function RouteLoader() {
 
 	function fromPath(modulePath: string) {
 		try {
-			const router = require(modulePath); //eslint-disable-line @typescript-eslint/no-var-requires
+			const router = require(modulePath); // eslint-disable-line @typescript-eslint/no-require-imports
 			if (IsRouter(router)) {
 				return router as Router;
 			}

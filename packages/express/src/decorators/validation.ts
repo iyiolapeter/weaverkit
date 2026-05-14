@@ -73,7 +73,11 @@ export const Constraint = (constraints: FieldConstraint | FieldConstraint[]) => 
 		if (!schema[property]) {
 			schema[property] = [];
 		}
-		Array.isArray(constraints) ? schema[property].push(...constraints) : schema[property].push(constraints);
+		if (Array.isArray(constraints)) {
+			schema[property].push(...constraints);
+		} else {
+			schema[property].push(constraints);
+		}
 		SetSchema(target, schema);
 	};
 };

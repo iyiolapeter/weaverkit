@@ -17,7 +17,7 @@ const serialize = (data: string | any[] | Record<string, any>) => {
 const unserialize = (data: string) => {
 	try {
 		return isNaN(Number(data)) ? JSON.parse(data) : data;
-	} catch (error) {
+	} catch (_error) {
 		return data;
 	}
 };
@@ -161,7 +161,7 @@ export class KeyVal {
 				return true;
 			}
 			return false;
-		} catch (error) {
+		} catch (_error) {
 			return false;
 		}
 	}

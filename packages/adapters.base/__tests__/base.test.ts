@@ -100,9 +100,7 @@ describe("ensure()", () => {
 	});
 
 	it("throws when no adapter is provided and no defaultConnection is set", () => {
-		expect(() => FakeAdapter.ensure()).toThrow(
-			"Please pass a connection instance to this method or initialize a default connection",
-		);
+		expect(() => FakeAdapter.ensure()).toThrow("Please pass a connection instance to this method or initialize a default connection");
 	});
 });
 

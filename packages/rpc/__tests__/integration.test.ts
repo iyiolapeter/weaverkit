@@ -248,8 +248,7 @@ describe("RPC Integration", () => {
 	});
 
 	describe("server events", () => {
-		const waitFor = (event: RpcServerEvents) =>
-			new Promise<any>((resolve) => server.once(event, resolve));
+		const waitFor = (event: RpcServerEvents) => new Promise<any>((resolve) => server.once(event, resolve));
 
 		it("emits handler:start and handler:end on successful call", async () => {
 			const events: Array<{ type: string; payload: any }> = [];

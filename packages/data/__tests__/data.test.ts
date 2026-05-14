@@ -188,9 +188,7 @@ describe("BaseView.normalize()", () => {
 	});
 
 	it("rejects ../ traversal even from nested view names", () => {
-		expect(() => BaseView.normalize("admin/../../etc/passwd", folder, ext)).toThrow(
-			/path traversal blocked/,
-		);
+		expect(() => BaseView.normalize("admin/../../etc/passwd", folder, ext)).toThrow(/path traversal blocked/);
 	});
 
 	it("allows nested paths that stay under the folder", () => {

@@ -79,9 +79,7 @@ export class RpcClient {
 		const promise = new Promise<T>((resolve, reject) => {
 			const ackTimer = setTimeout(() => {
 				this.pending.delete(correlationId);
-				reject(
-					new ServiceUnavailableError(`RPC ack timeout for ${service}/${action}`).setServiceName(service),
-				);
+				reject(new ServiceUnavailableError(`RPC ack timeout for ${service}/${action}`).setServiceName(service));
 			}, ackTimeout);
 
 			this.pending.set(correlationId, {

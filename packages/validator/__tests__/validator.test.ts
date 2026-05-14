@@ -203,7 +203,9 @@ describe("validate()", () => {
 		// false is present (not null/undefined) — required check passes
 		// use customValidator since ValidatorJS predicates require string/number types
 		const errors = await validate({ active: false }, [
-			node("active").exists().customValidator((v) => typeof v === "boolean"),
+			node("active")
+				.exists()
+				.customValidator((v) => typeof v === "boolean"),
 		]);
 		expect(errors).toHaveLength(0);
 	});
@@ -295,13 +297,19 @@ describe("validate()", () => {
 	});
 
 	it("not() negates a custom function validator", async () => {
-		const errors = await validate({ flag: true }, [node("flag").not().customValidator((v) => v === true)]);
+		const errors = await validate({ flag: true }, [
+			node("flag")
+				.not()
+				.customValidator((v) => v === true),
+		]);
 		expect(errors).toHaveLength(1);
 	});
 
 	it("not() with async custom validator — negation applied to awaited result", async () => {
 		const errors = await validate({ flag: true }, [
-			node("flag").not().customValidator(async (v) => v === true),
+			node("flag")
+				.not()
+				.customValidator(async (v) => v === true),
 		]);
 		expect(errors).toHaveLength(1);
 	});
@@ -331,9 +339,7 @@ describe("validate()", () => {
 	});
 
 	it("async custom validator: awaited and fails correctly", async () => {
-		const errors = await validate({ val: "x" }, [
-			node("val").customValidator(async () => false),
-		]);
+		const errors = await validate({ val: "x" }, [node("val").customValidator(async () => false)]);
 		expect(errors).toHaveLength(1);
 	});
 
@@ -361,19 +367,31 @@ describe("validate()", () => {
 
 	it("applies a custom sanitizer function when validation passes", async () => {
 		const obj = { name: "alice" };
-		await validate(obj, [node("name").isString().customSanitizer((v) => v.toUpperCase())]);
+		await validate(obj, [
+			node("name")
+				.isString()
+				.customSanitizer((v) => v.toUpperCase()),
+		]);
 		expect(obj.name).toBe("ALICE");
 	});
 
 	it("applies an async custom sanitizer", async () => {
 		const obj = { name: "alice" };
-		await validate(obj, [node("name").isString().customSanitizer(async (v) => v + "!")]);
+		await validate(obj, [
+			node("name")
+				.isString()
+				.customSanitizer(async (v) => v + "!"),
+		]);
 		expect(obj.name).toBe("alice!");
 	});
 
 	it("does NOT apply sanitizers when validation fails", async () => {
 		const obj = { name: 42 };
-		await validate(obj, [node("name").isString().customSanitizer((_v) => "sanitized")]);
+		await validate(obj, [
+			node("name")
+				.isString()
+				.customSanitizer((_v) => "sanitized"),
+		]);
 		expect(obj.name).toBe(42);
 	});
 
@@ -403,10 +421,12 @@ describe("validate()", () => {
 		// 'a' passes, then 'b' should still get its sanitizer if it passes
 		const sanitizerCalls: string[] = [];
 		await validate(obj, [
-			node("*").customValidator((v) => typeof v === "string").customSanitizer((v) => {
-				sanitizerCalls.push(v);
-				return v;
-			}),
+			node("*")
+				.customValidator((v) => typeof v === "string")
+				.customSanitizer((v) => {
+					sanitizerCalls.push(v);
+					return v;
+				}),
 		]);
 		// Only 'a' passed, so sanitizer called once
 		expect(sanitizerCalls).toHaveLength(1);
@@ -416,56 +436,42 @@ describe("validate()", () => {
 	// --- child nodes (nested validation) ----------------------------------
 	it("child node validates nested object properties", async () => {
 		const obj = { address: { street: "123 Main St" } };
-		const errors = await validate(obj, [
-			node("address").child("street").exists().isString().endChild(),
-		]);
+		const errors = await validate(obj, [node("address").child("street").exists().isString().endChild()]);
 		expect(errors).toHaveLength(0);
 	});
 
 	it("child node reports errors with nested parameter path", async () => {
 		const obj = { address: { street: null } };
-		const errors = await validate(obj, [
-			node("address").child("street").exists().endChild(),
-		]);
+		const errors = await validate(obj, [node("address").child("street").exists().endChild()]);
 		expect(errors).toHaveLength(1);
 		expect(errors[0].parameter).toBe("address.street");
 	});
 
 	// --- oneOf ------------------------------------------------------------
 	it("oneOf: no error when one branch passes", async () => {
-		const errors = await validate({ value: "user@example.com" }, [
-			oneOf([node("value").isEmail(), node("value").isURL()]),
-		]);
+		const errors = await validate({ value: "user@example.com" }, [oneOf([node("value").isEmail(), node("value").isURL()])]);
 		expect(errors).toHaveLength(0);
 	});
 
 	it("oneOf: error when all branches fail", async () => {
-		const errors = await validate({ value: "not-valid" }, [
-			oneOf([node("value").isEmail(), node("value").isURL()]),
-		]);
+		const errors = await validate({ value: "not-valid" }, [oneOf([node("value").isEmail(), node("value").isURL()])]);
 		expect(errors).toHaveLength(1);
 		expect(errors[0].message).toBe("Invalid Value");
 		expect(errors[0].nestedErrors).toBeDefined();
 	});
 
 	it("oneOf: uses custom withMessage when all branches fail", async () => {
-		const errors = await validate({ value: "bad" }, [
-			oneOf([node("value").isEmail()]).withMessage("Must be email or URL"),
-		]);
+		const errors = await validate({ value: "bad" }, [oneOf([node("value").isEmail()]).withMessage("Must be email or URL")]);
 		expect(errors[0].message).toBe("Must be email or URL");
 	});
 
 	it("oneOf: accepts an array branch (multiple nodes that must all pass)", async () => {
-		const errors = await validate({ a: "user@example.com", b: "42" }, [
-			oneOf([[node("a").isEmail(), node("b").isNumeric()]]),
-		]);
+		const errors = await validate({ a: "user@example.com", b: "42" }, [oneOf([[node("a").isEmail(), node("b").isNumeric()]])]);
 		expect(errors).toHaveLength(0);
 	});
 
 	it("oneOf: array branch fails if any node fails", async () => {
-		const errors = await validate({ a: "bad", b: "42" }, [
-			oneOf([[node("a").isEmail(), node("b").isNumeric()]]),
-		]);
+		const errors = await validate({ a: "bad", b: "42" }, [oneOf([[node("a").isEmail(), node("b").isNumeric()]])]);
 		expect(errors).toHaveLength(1);
 	});
 
@@ -482,10 +488,7 @@ describe("validate()", () => {
 
 	it("collects errors from multiple failing nodes", async () => {
 		const obj = { name: 123, email: "bad" };
-		const errors = await validate(obj, [
-			node("name").exists().isString(),
-			node("email").exists().isEmail(),
-		]);
+		const errors = await validate(obj, [node("name").exists().isString(), node("email").exists().isEmail()]);
 		expect(errors.length).toBeGreaterThanOrEqual(2);
 	});
 
