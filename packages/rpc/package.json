@@ -1,6 +1,6 @@
 {
 	"name": "@weaverkit/rpc",
-	"version": "0.3.1",
+	"version": "0.4.0",
 	"description": "Redis-backed RPC client and server for @weaverkit",
 	"author": "Peter Smart <iyiolapeter@gmail.com>",
 	"license": "MIT",
